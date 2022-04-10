@@ -34,5 +34,12 @@ namespace ShopRite.API.Controllers
             return Ok(product);
         }
 
+        [HttpPut]
+        public async Task<IActionResult> UpdateProd(UpdateProduct.ProductUpdateRequest request)
+        {
+            var product = await _mediator.Send(new UpdateProduct.Command(request));
+            return Ok(product);
+        }
+
     }
 }
