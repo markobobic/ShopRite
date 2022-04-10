@@ -5,8 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
     <PackageReference Include="NUlid" Version="1.7.0" />
     <PackageReference Include="RavenDB.Client" Version="5.3.101" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShopRite.Domain\ShopRite.Domain.csproj" />
   </ItemGroup>
 
 </Project>

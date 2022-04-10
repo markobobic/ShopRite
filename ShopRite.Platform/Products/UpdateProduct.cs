@@ -1,12 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ShopRite.Platform.Products
+﻿namespace ShopRite.Platform.Products
 {
-    internal class UpdateProduct
+    public class UpdateProduct
     {
+        public class Command
+        {
+            public Command(ProductRequest request)
+            {
+                Request = request;
+            }
+
+            public ProductRequest Request { get; set; }
+        }
+
+        public class ProductRequest
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public decimal Price { get; set; }
+        }
     }
 }

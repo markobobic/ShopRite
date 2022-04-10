@@ -1,29 +1,16 @@
 ﻿using MediatR;
 using Raven.Client.Documents;
 using ShopRite.Domain;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace ShopRite.Platform.Products
 {
-    public class GetProducts
+    public class GetProduct
     {
         public class Query : IRequest<Response>
         {
-
-        }
-
-        public class Response
-        {
-            public IEnumerable<ProductDTO> Products { get; set; }
-        }
-        public class ProductDTO
-        {
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public decimal Price { get; set; }
+            public string Id { get; set; }
         }
 
         public class QueryHandler : IRequestHandler<Query, Response>
@@ -34,20 +21,27 @@ namespace ShopRite.Platform.Products
             {
                 _db = db;
             }
+
             public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
+                var product = await session.LoadAsync<Product>(request.Id);
                 return new Response
                 {
-                    Products = (await session.Query<Product>().ToListAsync()).Select(x => new ProductDTO
-                    {
-                        Price = x.Price,
-                        Description = x.Description,
-                        Name = x.Name,
-                    }).ToList()
+                    Id = product.Id,
+                    Description = product.Description,
+                    Name = product.Name,
+                    Price = product.Price,
                 };
-
             }
+        }
+
+        public class Response
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public decimal Price { get; set; }
         }
     }
 }

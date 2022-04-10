@@ -5,13 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
     <PackageReference Include="NUlid" Version="1.7.0" />
     <PackageReference Include="RavenDB.Client" Version="5.3.101" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\ShopRite.Platform\ShopRite.Platform.csproj" />
   </ItemGroup>
 
 </Project>
