@@ -1,8 +1,8 @@
-﻿using System;
-
-namespace ShopRite.Domain
+﻿namespace ShopRite.Domain
 {
-    public class Product
+    public record Product : BaseEntity
     {
+        public string Name { get; init; }
+        public string Description { get; init; }
     }
 }

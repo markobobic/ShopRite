@@ -4,11 +4,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Raven.Client.Documents;
 
 namespace ShopRite.API
 {
     public class Startup
     {
+        private const string DatabaseName = "ShopRite";
+        private const string RavenURL = "http://127.0.0.1:8080/";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -21,6 +25,16 @@ namespace ShopRite.API
         {
 
             services.AddControllers();
+            services.AddSingleton<IDocumentStore>(provider =>
+            {
+                var store = new DocumentStore()
+                {
+                    Urls = new string[] { RavenURL },
+                    Database = DatabaseName
+                };
+                store.Initialize();
+                return store;
+            });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShopRite.API", Version = "v1" });

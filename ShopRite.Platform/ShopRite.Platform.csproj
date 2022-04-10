@@ -4,4 +4,9 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NUlid" Version="1.7.0" />
+    <PackageReference Include="RavenDB.Client" Version="5.3.101" />
+  </ItemGroup>
+
 </Project>
