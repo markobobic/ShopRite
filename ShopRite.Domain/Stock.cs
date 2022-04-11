@@ -3,7 +3,7 @@
     public record Stock : BaseEntity
     {
         public string Description { get; init; }
-        public string Quantity { get; init; }
-        public Product Product { get; init; }
+        public int Quantity { get; init; }
+        public string ProductId { get; init; }
     }
 }
