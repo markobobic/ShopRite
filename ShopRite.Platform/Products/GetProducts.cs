@@ -24,6 +24,7 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public List<Stock> Stocks { get; set; }
         }
 
         public class QueryHandler : IRequestHandler<Query, Response>
@@ -44,6 +45,7 @@ namespace ShopRite.Platform.Products
                         Price = x.Price,
                         Description = x.Description,
                         Name = x.Name,
+                        Stocks = x.Stocks,
                     }).ToList()
                 };
 
