@@ -1,6 +1,8 @@
 ﻿using MediatR;
 using Raven.Client.Documents;
 using ShopRite.Domain;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,17 +27,23 @@ namespace ShopRite.Platform.Products
             {
                 _db = db;
             }
+            // Stock { id: 1  name: Nike Quantity: 30}  StockUpdate {id:1 name:Addidas} 
             public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
             {
-               using var session = _db.OpenAsyncSession();
-               var existingProduct = await session.LoadAsync<Product>(request.Request.Id, cancellationToken);
+                using var session = _db.OpenAsyncSession();
+                var existingProduct = await session.LoadAsync<Product>(request.Request.Id, cancellationToken);
                 session.Advanced.Evict(existingProduct);
+                var excludedStocks = existingProduct.Stocks.Where(s => !request.Request.Stocks.Any(p => p.Id == s.Id)).ToList();
+                excludedStocks.AddRange(request.Request.Stocks);
+                existingProduct.Stocks = excludedStocks.OrderBy(o => o.Id).ToList();
+
                 var product = existingProduct with
                 {
                     Id = request.Request.Id,
                     Name = request.Request.Name,
                     Description = request.Request.Description,
                     Price = request.Request.Price,
+                    Stocks = existingProduct.Stocks
                 };
                 await session.StoreAsync(product);
                 await session.SaveChangesAsync(cancellationToken);
@@ -45,6 +53,7 @@ namespace ShopRite.Platform.Products
                     Id = product.Id,
                     Name = product.Name,
                     Price = product.Price,
+                    Stocks = existingProduct.Stocks
                 };
             }
         }
@@ -54,6 +63,7 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public List<Stock> Stocks { get; set; }
         }
 
         public class Response
@@ -62,6 +72,7 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public List<Stock> Stocks { get; set; }
         }
     }
 }

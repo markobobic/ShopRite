@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Raven.Client.Documents;
 using ShopRite.Domain;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,13 +26,15 @@ namespace ShopRite.Platform.Products
             public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
-                var product = await session.LoadAsync<Product>(request.Id);
+                var product = await session.Query<Product>().FirstOrDefaultAsync(cancellationToken);
+                
                 return new Response
                 {
                     Id = product.Id,
                     Description = product.Description,
                     Name = product.Name,
                     Price = product.Price,
+                    Stocks = product.Stocks
                 };
             }
         }
@@ -42,6 +45,7 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public List<Stock> Stocks { get; set; }
         }
     }
 }

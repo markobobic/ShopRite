@@ -9,4 +9,6 @@ namespace ShopRite.Domain
         public decimal Price { get; set; }
         public List<Stock> Stocks { get; set; } = new List<Stock>();
     }
+
+
 }

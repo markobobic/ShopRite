@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Raven.Client.Documents;
 using ShopRite.Domain;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,13 +35,17 @@ namespace ShopRite.Platform.Products
                     Price = request.ProductRequest.Price,
                     Description = request.ProductRequest.Description,
                     Name = request.ProductRequest.Name,
+                    Stocks = request.ProductRequest.Stocks,
                 }, cancellationToken);
+                
                 await session.SaveChangesAsync();
+                
                 return new Response
                 {
                     Price = request.ProductRequest.Price,
                     Description = request.ProductRequest.Description,
                     Name = request.ProductRequest.Name,
+                    Stocks = request.ProductRequest?.Stocks,
                 };
             }
         }
@@ -50,12 +55,15 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public List<Stock> Stocks { get; set; }
         }
         public class Response
         {
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public List<Stock> Stocks { get; set; }
+
         }
     }
 }
