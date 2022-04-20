@@ -1,5 +1,7 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using Raven.Client.Documents;
+using ShopRite.Core.Enumerations;
 using ShopRite.Domain;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +20,26 @@ namespace ShopRite.Platform.Products
             }
 
             public ProductUpdateRequest Request { get; set; }
+            
+        }
+        public class Validator : AbstractValidator<Command>
+        {
+            public Validator()
+            {
+                RuleFor(x => x.Request.Name).NotEmpty();
+                RuleFor(x => x.Request.Brand).Must(ub =>
+                {
+                    ProductBrand.TryFromValue(ub, out var productBrand);
+                    return productBrand != null && productBrand != string.Empty;
+                })
+                    .WithMessage("Product brand is not valid!");
+                RuleFor(x => x.Request.Type).Must(ub =>
+                {
+                    ProductType.TryFromValue(ub, out var productType);
+                    return productType != null && productType != string.Empty;
+                })
+                    .WithMessage("Product type is not valid!");
+            }
         }
         public class Handler : IRequestHandler<Command, Response>
         {
@@ -27,7 +49,6 @@ namespace ShopRite.Platform.Products
             {
                 _db = db;
             }
-            // Stock { id: 1  name: Nike Quantity: 30}  StockUpdate {id:1 name:Addidas} 
             public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
@@ -43,6 +64,9 @@ namespace ShopRite.Platform.Products
                     Name = request.Request.Name,
                     Description = request.Request.Description,
                     Price = request.Request.Price,
+                    PictureUrl = request.Request.PictureUrl,
+                    ProductBrand = request.Request.Brand,
+                    ProductType = request.Request.Type,
                     Stocks = existingProduct.Stocks
                 };
                 await session.StoreAsync(product);
@@ -53,7 +77,10 @@ namespace ShopRite.Platform.Products
                     Id = product.Id,
                     Name = product.Name,
                     Price = product.Price,
-                    Stocks = existingProduct.Stocks
+                    Stocks = existingProduct.Stocks,
+                    PictureUrl = product.PictureUrl,
+                    Type = product.ProductType,
+                    Brand = product.ProductBrand
                 };
             }
         }
@@ -64,6 +91,9 @@ namespace ShopRite.Platform.Products
             public string Description { get; set; }
             public decimal Price { get; set; }
             public List<Stock> Stocks { get; set; }
+            public string Brand { get; internal set; }
+            public string Type { get; internal set; }
+            public string PictureUrl { get; internal set; }
         }
 
         public class Response
@@ -73,6 +103,9 @@ namespace ShopRite.Platform.Products
             public string Description { get; set; }
             public decimal Price { get; set; }
             public List<Stock> Stocks { get; set; }
+            public string PictureUrl { get; internal set; }
+            public string Type { get; internal set; }
+            public string Brand { get; internal set; }
         }
     }
 }

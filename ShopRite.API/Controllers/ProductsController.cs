@@ -1,7 +1,9 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ShopRite.Core.Enumerations;
 using ShopRite.Platform.Products;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace ShopRite.API.Controllers
@@ -33,6 +35,9 @@ namespace ShopRite.API.Controllers
             var product = await _mediator.Send(new GetProduct.Query() { Id = id });
             return Ok(product);
         }
+
+        [HttpGet("brands")]
+        public IActionResult GetBrands() => Ok(ProductBrand.List.Select(x => x.Value).ToList());
 
         [HttpPut]
         public async Task<IActionResult> UpdateProd(UpdateProduct.ProductUpdateRequest request)

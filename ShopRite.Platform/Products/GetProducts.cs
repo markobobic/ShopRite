@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using Raven.Client.Documents;
 using ShopRite.Domain;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace ShopRite.Platform.Products
         {
 
         }
-
+        
         public class Response
         {
             public IEnumerable<ProductDTO> Products { get; set; }
@@ -24,7 +25,10 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public string Brand { get; set; }
+            public string Type { get; set; }
             public List<Stock> Stocks { get; set; }
+            public string PictureUrl { get; internal set; }
         }
 
         public class QueryHandler : IRequestHandler<Query, Response>
@@ -45,6 +49,9 @@ namespace ShopRite.Platform.Products
                         Price = x.Price,
                         Description = x.Description,
                         Name = x.Name,
+                        Brand = x.ProductBrand,
+                        Type = x.ProductType,
+                        PictureUrl = x.PictureUrl,
                         Stocks = x.Stocks,
                     }).ToList()
                 };
