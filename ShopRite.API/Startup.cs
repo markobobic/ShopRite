@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using ShopRite.Core.Pipelines;
 using System.Reflection;
 
 namespace ShopRite.API
@@ -14,6 +16,8 @@ namespace ShopRite.API
     {
         private const string DatabaseName = "ShopRite";
         private const string RavenURL = "http://127.0.0.1:8081/";
+        private const string ShppRitePlatform = "ShopRite.Platform";
+        private const string ShopRiteCore = "ShopRite.Core";
 
         public Startup(IConfiguration configuration)
         {
@@ -25,8 +29,8 @@ namespace ShopRite.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.AddControllers();
+
             services.AddSingleton<IDocumentStore>(provider =>
             {
                 var store = new DocumentStore()
@@ -37,10 +41,21 @@ namespace ShopRite.API
                 store.Initialize();
                 return store;
             });
-           
-            services.AddMediatR(Assembly.Load("ShopRite.Platform"));
+            
+            services.AddMediatR(Assembly.Load(ShppRitePlatform));
+            Assembly core = Assembly.Load(ShopRiteCore);
 
-
+            FluentValidation.AssemblyScanner.FindValidatorsInAssembly(core)
+                .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
+            services.Scan(
+                x =>
+                {
+                    x.FromAssemblies(Assembly.Load(ShppRitePlatform))
+                        .AddClasses(classes => classes.AssignableTo(typeof(AbstractValidator<>)))
+                        .AsImplementedInterfaces()
+                        .WithScopedLifetime();
+                });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShopRite.API", Version = "v1" });
@@ -60,13 +75,14 @@ namespace ShopRite.API
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
+           
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+            
         }
     }
 }

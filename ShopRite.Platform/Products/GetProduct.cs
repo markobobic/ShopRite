@@ -34,6 +34,8 @@ namespace ShopRite.Platform.Products
                     Description = product.Description,
                     Name = product.Name,
                     Price = product.Price,
+                    Brand = product.ProductBrand,
+                    Type = product.ProductType,
                     Stocks = product.Stocks
                 };
             }
@@ -45,6 +47,8 @@ namespace ShopRite.Platform.Products
             public string Name { get; set; }
             public string Description { get; set; }
             public decimal Price { get; set; }
+            public string Brand { get; set; }
+            public string Type { get; set; }
             public List<Stock> Stocks { get; set; }
         }
     }
