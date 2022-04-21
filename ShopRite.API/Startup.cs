@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using ShopRite.Core.Configurations;
+using ShopRite.Core.Constants;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
 using System.Reflection;
@@ -37,7 +39,7 @@ namespace ShopRite.API
                 return store;
             });
 
-            services.AddMediatR(Assembly.Load(Assemblies.ShppRitePlatform));
+            services.AddMediatR(Assembly.Load(Assemblies.ShopRitePlatform));
             Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
 
             FluentValidation.AssemblyScanner.FindValidatorsInAssembly(core)

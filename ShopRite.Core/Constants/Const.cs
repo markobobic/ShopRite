@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ShopRite.Core.Constants
+﻿namespace ShopRite.Core.Constants
 {
-    internal class Const
+    public static class Assemblies
     {
+        public const string ShopRitePlatform = "ShopRite.Platform";
+        public const string ShopRiteCore = "ShopRite.Core";
+        public const string ShppRitePlatform = "ShppRite.Platform";
     }
 }
