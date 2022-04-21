@@ -26,8 +26,8 @@ namespace ShopRite.Platform.Products
             public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
-                var product = await session.Query<Product>().FirstOrDefaultAsync(cancellationToken);
-                
+                var product = await session.Query<Product>().FirstOrDefaultAsync(x => x.Id == request.Id,cancellationToken);
+                if (product == null) return null;
                 return new Response
                 {
                     Id = product.Id,
