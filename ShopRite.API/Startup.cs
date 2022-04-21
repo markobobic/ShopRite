@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
 using System.Reflection;
 
@@ -41,12 +41,13 @@ namespace ShopRite.API
                 store.Initialize();
                 return store;
             });
-            
+
             services.AddMediatR(Assembly.Load(ShppRitePlatform));
             Assembly core = Assembly.Load(ShopRiteCore);
 
-            FluentValidation.AssemblyScanner.FindValidatorsInAssembly(core)
+            AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
+            
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
             services.Scan(
                 x =>
@@ -65,24 +66,23 @@ namespace ShopRite.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopRite.API v1"));
-            }
+            app.UseMiddleware<ExceptionMiddleware>();
 
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopRite.API v1"));
+            
+            app.UseStatusCodePagesWithReExecute("/errors/{0}");
             app.UseHttpsRedirection();
 
             app.UseRouting();
-           
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
-            
+
         }
     }
 }

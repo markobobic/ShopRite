@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopRite.Core.Enumerations;
+using ShopRite.Core.Responses;
 using ShopRite.Platform.Products;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,9 +31,10 @@ namespace ShopRite.API.Controllers
             return Ok(products);
         }
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetAllProducts(string id)
+        public async Task<IActionResult> GetProductById(string id)
         {
             var product = await _mediator.Send(new GetProduct.Query() { Id = id });
+            if (product == null) return NotFound(new ApiResponse(404, "Product is not found."));
             return Ok(product);
         }
 
