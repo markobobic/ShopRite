@@ -6,6 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using ShopRite.Core.Configurations;
+using ShopRite.Core.Constants;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
 using System.Reflection;
@@ -19,6 +21,12 @@ namespace ShopRite.API
         private const string ShppRitePlatform = "ShopRite.Platform";
         private const string ShopRiteCore = "ShopRite.Core";
 
+        private readonly IConfiguration _configuration;
+<<<<<<< Updated upstream
+        private readonly DatabaseConfig _dbConfig; 
+=======
+        private readonly DatabaseConfig _dbConfig;
+>>>>>>> Stashed changes
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -70,7 +78,7 @@ namespace ShopRite.API
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopRite.API v1"));
-            
+
             app.UseStatusCodePagesWithReExecute("/errors/{0}");
             app.UseHttpsRedirection();
 
