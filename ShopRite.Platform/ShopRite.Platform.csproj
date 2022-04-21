@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -6,12 +6,15 @@
 
   <ItemGroup>
     <PackageReference Include="Ardalis.GuardClauses" Version="4.0.1" />
+    <PackageReference Include="FluentValidation" Version="10.4.0" />
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.2.0" />
     <PackageReference Include="NUlid" Version="1.7.0" />
     <PackageReference Include="RavenDB.Client" Version="5.3.101" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ShopRite.Core\ShopRite.Core.csproj" />
     <ProjectReference Include="..\ShopRite.Domain\ShopRite.Domain.csproj" />
   </ItemGroup>
 

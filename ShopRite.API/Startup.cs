@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using ShopRite.Core.Configurations;
+using ShopRite.Core.Constants;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
 using System.Reflection;
@@ -16,11 +18,7 @@ namespace ShopRite.API
     public class Startup
     {
         private readonly IConfiguration _configuration;
-<<<<<<< Updated upstream
-        private readonly DatabaseConfig _dbConfig; 
-=======
         private readonly DatabaseConfig _dbConfig;
->>>>>>> Stashed changes
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -29,7 +27,7 @@ namespace ShopRite.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            
+
             services.AddSingleton<IDocumentStore>(provider =>
             {
                 var store = new DocumentStore()
@@ -41,7 +39,7 @@ namespace ShopRite.API
                 return store;
             });
 
-            services.AddMediatR(Assembly.Load(Assemblies.ShppRitePlatform));
+            services.AddMediatR(Assembly.Load(Assemblies.ShopRitePlatform));
             Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
 
             FluentValidation.AssemblyScanner.FindValidatorsInAssembly(core)
@@ -68,7 +66,7 @@ namespace ShopRite.API
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopRite.API v1"));
-            
+
             app.UseStatusCodePagesWithReExecute("/errors/{0}");
             app.UseHttpsRedirection();
 
@@ -80,7 +78,7 @@ namespace ShopRite.API
             {
                 endpoints.MapControllers();
             });
-            
+
         }
     }
 }
