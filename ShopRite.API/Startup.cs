@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -6,41 +7,54 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using ShopRite.Core.Middleware;
+using ShopRite.Core.Pipelines;
 using System.Reflection;
 
 namespace ShopRite.API
 {
     public class Startup
     {
-        private const string DatabaseName = "ShopRite";
-        private const string RavenURL = "http://127.0.0.1:8081/";
-
+        private readonly IConfiguration _configuration;
+<<<<<<< Updated upstream
+        private readonly DatabaseConfig _dbConfig; 
+=======
+        private readonly DatabaseConfig _dbConfig;
+>>>>>>> Stashed changes
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
+            _dbConfig = _configuration.Get<DatabaseConfig>();
         }
-
-        public IConfiguration Configuration { get; }
-
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
             services.AddControllers();
+            
             services.AddSingleton<IDocumentStore>(provider =>
             {
                 var store = new DocumentStore()
                 {
-                    Urls = new string[] { RavenURL },
-                    Database = DatabaseName
+                    Urls = _dbConfig.Database.Urls,
+                    Database = _dbConfig.Database.DatabaseName
                 };
                 store.Initialize();
                 return store;
             });
-           
-            services.AddMediatR(Assembly.Load("ShopRite.Platform"));
 
+            services.AddMediatR(Assembly.Load(Assemblies.ShppRitePlatform));
+            Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
 
+            FluentValidation.AssemblyScanner.FindValidatorsInAssembly(core)
+                .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
+            services.Scan(
+                x =>
+                {
+                    x.FromAssemblies(Assembly.Load(Assemblies.ShppRitePlatform))
+                        .AddClasses(classes => classes.AssignableTo(typeof(AbstractValidator<>)))
+                        .AsImplementedInterfaces()
+                        .WithScopedLifetime();
+                });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShopRite.API", Version = "v1" });
@@ -50,23 +64,23 @@ namespace ShopRite.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopRite.API v1"));
-            }
+            app.UseMiddleware<ExceptionMiddleware>();
 
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ShopRite.API v1"));
+            
+            app.UseStatusCodePagesWithReExecute("/errors/{0}");
             app.UseHttpsRedirection();
 
             app.UseRouting();
-
+           
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
+            
         }
     }
 }
