@@ -4,10 +4,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
-using ShopRite.Core.Configurations;
-using ShopRite.Core.Constants;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
 using System.Reflection;
@@ -16,25 +15,13 @@ namespace ShopRite.API
 {
     public class Startup
     {
-        private const string DatabaseName = "ShopRite";
-        private const string RavenURL = "http://127.0.0.1:8081/";
-        private const string ShppRitePlatform = "ShopRite.Platform";
-        private const string ShopRiteCore = "ShopRite.Core";
-
         private readonly IConfiguration _configuration;
-<<<<<<< Updated upstream
-        private readonly DatabaseConfig _dbConfig; 
-=======
         private readonly DatabaseConfig _dbConfig;
->>>>>>> Stashed changes
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
+            _dbConfig = _configuration.Get<DatabaseConfig>();
         }
-
-        public IConfiguration Configuration { get; }
-
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
@@ -43,24 +30,23 @@ namespace ShopRite.API
             {
                 var store = new DocumentStore()
                 {
-                    Urls = new string[] { RavenURL },
-                    Database = DatabaseName
+                    Urls = _dbConfig.Database.Urls,
+                    Database = _dbConfig.Database.DatabaseName
                 };
                 store.Initialize();
                 return store;
             });
 
-            services.AddMediatR(Assembly.Load(ShppRitePlatform));
-            Assembly core = Assembly.Load(ShopRiteCore);
+            services.AddMediatR(Assembly.Load(Assemblies.ShppRitePlatform));
+            Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
 
-            AssemblyScanner.FindValidatorsInAssembly(core)
+            FluentValidation.AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
-            
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
             services.Scan(
                 x =>
                 {
-                    x.FromAssemblies(Assembly.Load(ShppRitePlatform))
+                    x.FromAssemblies(Assembly.Load(Assemblies.ShppRitePlatform))
                         .AddClasses(classes => classes.AssignableTo(typeof(AbstractValidator<>)))
                         .AsImplementedInterfaces()
                         .WithScopedLifetime();
