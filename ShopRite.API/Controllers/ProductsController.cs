@@ -25,9 +25,14 @@ namespace ShopRite.API.Controllers
            return Ok();
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllProducts()
+        public async Task<IActionResult> GetAllProducts(string sortOrder, bool sortAscending, string search, string filter)
         {
-            var products = await _mediator.Send(new GetProducts.Query());
+            var products = await _mediator.Send(new GetProducts.Query()
+            {
+                SortAscending = sortAscending,
+                SortOrder = sortOrder,
+                Search = search
+            });
             return Ok(products);
         }
         [HttpGet("{id}")]

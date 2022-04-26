@@ -1,9 +1,12 @@
-﻿using FluentValidation;
-using MediatR;
+﻿using MediatR;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Linq;
+using ShopRite.Core.Enumerations;
 using ShopRite.Domain;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,9 +16,14 @@ namespace ShopRite.Platform.Products
     {
         public class Query : IRequest<Response>
         {
-
+            public string SortOrder { get; set; }
+            public string Filter { get; set; }
+            public bool SortAscending { get; set; }
+            public string BrandName { get; set; }
+            public string TypeName { get; set; }
+            public string Search { get; set; }
         }
-        
+
         public class Response
         {
             public IEnumerable<ProductDTO> Products { get; set; }
@@ -42,9 +50,30 @@ namespace ShopRite.Platform.Products
             public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
+                var products =  session.Query<Product>().ProjectInto<Product>();
+                
+                var sorts = new Dictionary<string, Expression<Func<Product, object>>>
+                     {
+                        {"price", x => x.Price},
+                        {"name", x => x.Name},
+                        {"brand", x => x.ProductBrand}
+                    };
+
+                var filter = new Dictionary<string, Expression<Func<Product, bool>>>
+                     {
+                        {"type", x => x.ProductType == ProductType.FromValue(request.TypeName)},
+                        {"brand", x => x.ProductBrand == ProductBrand.FromValue(request.BrandName)}
+                    };
+                
+                products = string.IsNullOrEmpty(request.Filter) ? products : products.Where(filter[request.Filter]);
+                products = string.IsNullOrEmpty(request.Search) ? products : products.Search(c => c.Name, $"*{request.Search}*");
+                var productsOrdered = request.SortAscending ? products.OrderBy(sorts[request.SortOrder])
+                                                  : products.OrderByDescending(sorts[request.SortOrder]);
+
+                var productsToList = await products.ToListAsync(cancellationToken);
                 return new Response
                 {
-                    Products = (await session.Query<Product>().ToListAsync()).Select(x => new ProductDTO
+                    Products = productsToList.Select(x => new ProductDTO
                     {
                         Price = x.Price,
                         Description = x.Description,
