@@ -46,13 +46,13 @@ namespace ShopRite.API
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
             services.Scan(
-                x =>
+                (System.Action<Scrutor.ITypeSourceSelector>)(                x =>
                 {
-                    x.FromAssemblies(Assembly.Load(Assemblies.ShppRitePlatform))
+                    x.FromAssemblies(Assembly.Load((string)Assemblies.ShopRitePlatform))
                         .AddClasses(classes => classes.AssignableTo(typeof(AbstractValidator<>)))
                         .AsImplementedInterfaces()
                         .WithScopedLifetime();
-                });
+                }));
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShopRite.API", Version = "v1" });
