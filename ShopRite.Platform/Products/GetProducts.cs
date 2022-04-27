@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
+using Raven.Client.Documents.Session;
 using ShopRite.Core.Enumerations;
 using ShopRite.Domain;
 using System;
@@ -22,6 +23,8 @@ namespace ShopRite.Platform.Products
             public string BrandName { get; set; }
             public string TypeName { get; set; }
             public string Search { get; set; }
+            public int PageNumber { get; set; }
+            public int Limit { get; set; }
         }
 
         public class Response
@@ -37,6 +40,7 @@ namespace ShopRite.Platform.Products
             public string Type { get; set; }
             public List<Stock> Stocks { get; set; }
             public string PictureUrl { get; internal set; }
+            
         }
 
         public class QueryHandler : IRequestHandler<Query, Response>
@@ -65,12 +69,20 @@ namespace ShopRite.Platform.Products
                         {"brand", x => x.ProductBrand == ProductBrand.FromValue(request.BrandName)}
                     };
                 
-                products = string.IsNullOrEmpty(request.Filter) ? products : products.Where(filter[request.Filter]);
+                products = string.IsNullOrEmpty(request.Filter) ? products : products.Where(filter?.GetValueOrDefault(request.Filter));
                 products = string.IsNullOrEmpty(request.Search) ? products : products.Search(c => c.Name, $"*{request.Search}*");
-                var productsOrdered = request.SortAscending ? products.OrderBy(sorts[request.SortOrder])
-                                                  : products.OrderByDescending(sorts[request.SortOrder]);
-
-                var productsToList = await products.ToListAsync(cancellationToken);
+                
+                if(request.SortOrder is not null)
+                {
+                    products = request.SortAscending ? products.OrderBy(sorts?.GetValueOrDefault(request.SortOrder))
+                                                  : products.OrderByDescending(sorts?.GetValueOrDefault(request.SortOrder));
+                }
+                
+                var productsToList = await products
+                  .Statistics(out QueryStatistics stats)
+                  .Skip((request.PageNumber - 1) * request.Limit)
+                  .Take(request.Limit).ToListAsync(cancellationToken);
+               
                 return new Response
                 {
                     Products = productsToList.Select(x => new ProductDTO
