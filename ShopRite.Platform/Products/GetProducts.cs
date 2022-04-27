@@ -16,7 +16,7 @@ namespace ShopRite.Platform.Products
 {
     public class GetProducts
     {
-        public class Query : IRequest<Response>
+        public class Query : IRequest<PaginatedList<ProductDTO>>
         {
             public string SortOrder { get; set; }
             public string Filter { get; set; }
@@ -26,6 +26,8 @@ namespace ShopRite.Platform.Products
             public string Search { get; set; }
             public int PageNumber { get; set; }
             public int Limit { get; set; }
+            public int? AmountTo { get; set; }
+            public int? AmountFrom { get; set; }
         }
 
         public class Response
@@ -44,7 +46,7 @@ namespace ShopRite.Platform.Products
             
         }
 
-        public class QueryHandler : IRequestHandler<Query, Response>
+        public class QueryHandler : IRequestHandler<Query, PaginatedList<ProductDTO>>
         {
             private readonly IDocumentStore _db;
 
@@ -52,7 +54,7 @@ namespace ShopRite.Platform.Products
             {
                 _db = db;
             }
-            public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<PaginatedList<ProductDTO>> Handle(Query request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
                 var products =  session.Query<Product>().ProjectInto<Product>();
@@ -70,8 +72,11 @@ namespace ShopRite.Platform.Products
                         {"brand", x => x.ProductBrand == ProductBrand.FromValue(request.BrandName)}
                     };
                 
-                products = string.IsNullOrEmpty(request.Filter) ? products : products.Where(filter?.GetValueOrDefault(request.Filter));
-                products = string.IsNullOrEmpty(request.Search) ? products : products.Search(c => c.Name, $"*{request.Search}*");
+                products = string.IsNullOrEmpty(request.Filter) ? 
+                    products : products.Where(filter?.GetValueOrDefault(request.Filter));
+                
+                products = string.IsNullOrEmpty(request.Search) ?
+                    products : products.Search(c => c.Name, $"*{request.Search}*");
                 
                 if(request.SortOrder is not null)
                 {
@@ -79,11 +84,16 @@ namespace ShopRite.Platform.Products
                                                   : products.OrderByDescending(sorts?.GetValueOrDefault(request.SortOrder));
                 }
                 
-                var productsToList = (await products.ToPagination(request.PageNumber, request.Limit, cancellationToken)).PaginatedList;
+                var productsToList = (await products.ToPagination(request.PageNumber, request.Limit, cancellationToken));
 
-                return new Response
+                return new PaginatedList<ProductDTO>
                 {
-                    Products = productsToList.Select(x => new ProductDTO
+                    PageNumber = request.PageNumber,
+                    PageSize = request.Limit,
+                    TotalItems = productsToList.QueryStatistics.TotalResults,
+                    Data = productsToList.PaginatedList
+                    .Where(x => x.Price >= request.AmountFrom && x.Price <= request.AmountTo)
+                    .Select(x => new ProductDTO
                     {
                         Price = x.Price,
                         Description = x.Description,
@@ -93,6 +103,7 @@ namespace ShopRite.Platform.Products
                         PictureUrl = x.PictureUrl,
                         Stocks = x.Stocks,
                     }).ToList()
+                    
                 };
 
             }

@@ -1,7 +1,7 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopRite.Core.Constants;
+using ShopRite.Core.DTOs;
 using ShopRite.Core.Enumerations;
 using ShopRite.Core.Responses;
 using ShopRite.Platform.Products;
@@ -26,15 +26,17 @@ namespace ShopRite.API.Controllers
            return Ok();
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllProducts(string sortOrder, bool sortAscending, string search, string filter, int? pageNumber, int? limit)
+        public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParams parametars)
         {
             var products = await _mediator.Send(new GetProducts.Query()
             {
-                SortAscending = sortAscending,
-                SortOrder = sortOrder,
-                Search = search,
-                PageNumber = pageNumber ?? PaginationConfig.FirstPageNumber,
-                Limit = limit ?? PaginationConfig.DefaultLimit
+                SortAscending = parametars.SortAscending,
+                SortOrder = parametars.SortOrder,
+                Search = parametars.Search,
+                PageNumber = parametars.PageNumber ?? PaginationConfig.FirstPageNumber,
+                Limit = parametars.Limit ?? PaginationConfig.DefaultLimit,
+                AmountFrom = parametars.AmountFrom ?? int.MinValue,
+                AmountTo = parametars.AmountTo ?? int.MaxValue,
             });
             return Ok(products);
         }
