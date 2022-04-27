@@ -4,6 +4,10 @@
     {
         public const string ShopRitePlatform = "ShopRite.Platform";
         public const string ShopRiteCore = "ShopRite.Core";
-        public const string ShppRitePlatform = "ShppRite.Platform";
+    }
+    public static class PaginationConfig
+    {
+        public const int DefaultLimit = 20;
+        public const int FirstPageNumber = 1;
     }
 }
