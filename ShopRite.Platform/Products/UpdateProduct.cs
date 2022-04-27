@@ -71,6 +71,7 @@ namespace ShopRite.Platform.Products
                 };
                 await session.StoreAsync(product);
                 await session.SaveChangesAsync(cancellationToken);
+                
                 return new Response
                 {
                     Description = product.Description,
