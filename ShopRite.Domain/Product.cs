@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ShopRite.Domain
 {
@@ -10,6 +11,7 @@ namespace ShopRite.Domain
         public string PictureUrl { get; set; }
         public string ProductBrand { get; set; }
         public string ProductType { get; set; }
+        [JsonIgnore]
         public List<Stock> Stocks { get; set; } = new List<Stock>();
     }
 
