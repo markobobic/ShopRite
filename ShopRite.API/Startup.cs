@@ -42,7 +42,7 @@ namespace ShopRite.API
             Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
             services.AddSingleton<IConnectionMultiplexer>(options =>
             {
-                var config = ConfigurationOptions.Parse(_configuration.GetConnectionString(_dbConfig.Database.RedisDatabaseName), true);
+                var config = ConfigurationOptions.Parse(_dbConfig.Database.RedisDatabaseName, true);
                 return ConnectionMultiplexer.Connect(config);
             });
             
