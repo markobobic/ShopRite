@@ -3,6 +3,7 @@ using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Session;
 using ShopRite.Core.Enumerations;
+using ShopRite.Core.Extensions;
 using ShopRite.Domain;
 using System;
 using System.Collections.Generic;
@@ -78,11 +79,8 @@ namespace ShopRite.Platform.Products
                                                   : products.OrderByDescending(sorts?.GetValueOrDefault(request.SortOrder));
                 }
                 
-                var productsToList = await products
-                  .Statistics(out QueryStatistics stats)
-                  .Skip((request.PageNumber - 1) * request.Limit)
-                  .Take(request.Limit).ToListAsync(cancellationToken);
-               
+                var productsToList = (await products.ToPagination(request.PageNumber, request.Limit, cancellationToken)).PaginatedList;
+
                 return new Response
                 {
                     Products = productsToList.Select(x => new ProductDTO
