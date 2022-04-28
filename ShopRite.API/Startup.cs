@@ -1,3 +1,4 @@
+using Amazon.S3;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -27,7 +28,8 @@ namespace ShopRite.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-
+            services.AddDefaultAWSOptions(_configuration.GetAWSOptions());
+            services.AddAWSService<IAmazonS3>();
             services.AddSingleton<IDocumentStore>(provider =>
             {
                 var store = new DocumentStore()

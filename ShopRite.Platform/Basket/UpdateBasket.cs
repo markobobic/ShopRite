@@ -1,6 +1,7 @@
 ﻿using Ardalis.GuardClauses;
 using MediatR;
 using Raven.Client.Documents;
+using ShopRite.Core.Extensions;
 using ShopRite.Domain;
 using StackExchange.Redis;
 using System;
@@ -13,12 +14,12 @@ namespace ShopRite.Platform.Basket
 {
     public class UpdateBasket
     {
-        public class Command : IRequest<Unit>
+        public class Command : IRequest<BasketUpdateResponse>
         {
 
             public BasketUpdateRequest Request { get; set; }
         }
-        public class Handler : IRequestHandler<Command, Unit>
+        public class Handler : IRequestHandler<Command, BasketUpdateResponse>
         {
             private const int ThirtyDays = 30;
             private readonly IDocumentStore _ravenDb;
@@ -29,7 +30,7 @@ namespace ShopRite.Platform.Basket
                 _db = db.GetDatabase();
                 _ravenDb = ravenDb;
             }
-            public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
+            public async Task<BasketUpdateResponse> Handle(Command request, CancellationToken cancellationToken)
             {
                 var session = _ravenDb.OpenAsyncSession();
                 var customerBasket = new CustomerBasket();
@@ -44,8 +45,10 @@ namespace ShopRite.Platform.Basket
                     StringSetAsync(customerBasket.Id,
                     JsonSerializer.Serialize(customerBasket),
                     TimeSpan.FromDays(ThirtyDays));
+                
+                Guard.Against.False(created, "Basket is not created.");
 
-                return Unit.Value;
+               return new BasketUpdateResponse { CustomerBasket = customerBasket };
             }
         }
         public class BasketUpdateRequest
@@ -61,7 +64,7 @@ namespace ShopRite.Platform.Basket
         
         public class BasketUpdateResponse
         {
-
+            public CustomerBasket CustomerBasket { get; set; }
         }
 
     }
