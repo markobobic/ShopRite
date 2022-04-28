@@ -100,7 +100,7 @@ namespace ShopRite.Platform.Products
                         Name = x.Name,
                         Brand = x.ProductBrand,
                         Type = x.ProductType,
-                        PictureUrl = x.PictureUrl,
+                        PictureUrl = x.ImageUrl,
                         Stocks = x.Stocks,
                     }).ToList()
                     

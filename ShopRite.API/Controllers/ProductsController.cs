@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopRite.Core.Constants;
 using ShopRite.Core.DTOs;
@@ -20,9 +21,10 @@ namespace ShopRite.API.Controllers
             _mediator = mediator;
         }
         [HttpPost]
-        public async Task<IActionResult> CreateProduct(CreateProduct.ProductRequest request)
+        public async Task<IActionResult> CreateProduct([FromForm] CreateProduct.ProductRequest request, IFormFile image)
         {
-           await _mediator.Send(new CreateProduct.Command(request));
+            throw new System.Exception("dada");
+           await _mediator.Send(new CreateProduct.Command(request, image));
            return Ok();
         }
         [HttpGet]

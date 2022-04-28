@@ -12,6 +12,8 @@ using ShopRite.Core.Constants;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
 using StackExchange.Redis;
+using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Extensions;
+using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Integrations;
 using System.Reflection;
 
 namespace ShopRite.API
@@ -30,6 +32,8 @@ namespace ShopRite.API
             services.AddControllers();
             services.AddDefaultAWSOptions(_configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
+            services.AddJsonMultipartFormDataSupport(JsonSerializerChoice.SystemText);
+
             services.AddSingleton<IDocumentStore>(provider =>
             {
                 var store = new DocumentStore()
