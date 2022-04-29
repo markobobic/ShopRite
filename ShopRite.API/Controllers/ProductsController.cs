@@ -21,10 +21,9 @@ namespace ShopRite.API.Controllers
             _mediator = mediator;
         }
         [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromForm] CreateProduct.ProductRequest request, IFormFile image)
+        public async Task<IActionResult> CreateProduct([FromForm] CreateProduct.ProductRequest request)
         {
-            throw new System.Exception("dada");
-           await _mediator.Send(new CreateProduct.Command(request, image));
+           await _mediator.Send(new CreateProduct.Command(request, request.Image));
            return Ok();
         }
         [HttpGet]

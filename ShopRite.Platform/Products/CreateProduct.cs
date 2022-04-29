@@ -10,6 +10,7 @@ using ShopRite.Core.Configurations;
 using ShopRite.Core.Enumerations;
 using ShopRite.Core.Extensions;
 using ShopRite.Domain;
+using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,14 +36,14 @@ namespace ShopRite.Platform.Products
         {
             public Validator()
             {
-                RuleFor(x => x.ProductRequest.Name).NotEmpty();
-                RuleFor(x => x.ProductRequest.ProductBrand).Must(ub =>
+                RuleFor(x => x.ProductRequest.ProductJsonRequest.Name).NotEmpty();
+                RuleFor(x => x.ProductRequest.ProductJsonRequest.ProductBrand).Must(ub =>
                 {
                     ProductBrand.TryFromValue(ub, out var productBrand);
                     return productBrand != null && productBrand != string.Empty;
                 })
                     .WithMessage("Product brand is not valid!");
-                RuleFor(x => x.ProductRequest.ProductType).Must(ub =>
+                RuleFor(x => x.ProductRequest.ProductJsonRequest.ProductType).Must(ub =>
                 {
                     ProductType.TryFromValue(ub, out var productType);
                     return productType != null && productType != string.Empty;
@@ -70,13 +71,13 @@ namespace ShopRite.Platform.Products
                 using var session = _db.OpenAsyncSession();
                 await session.StoreAsync(new Product
                 {
-                    Price = request.ProductRequest.Price,
-                    Description = request.ProductRequest.Description,
-                    Name = request.ProductRequest.Name,
-                    ProductBrand = request.ProductRequest.ProductBrand,
+                    Price = request.ProductRequest.ProductJsonRequest.Price,
+                    Description = request.ProductRequest.ProductJsonRequest.Description,
+                    Name = request.ProductRequest.ProductJsonRequest.Name,
+                    ProductBrand = request.ProductRequest.ProductJsonRequest.ProductBrand,
                     ImageUrl = urlOfFile,
-                    ProductType = request.ProductRequest.ProductType,
-                    Stocks = request.ProductRequest.Stocks
+                    ProductType = request.ProductRequest.ProductJsonRequest.ProductType,
+                    Stocks = request.ProductRequest.ProductJsonRequest.Stocks
                     .Select(x => new Stock { Description = x.Description, Quantity = x.Quantity }).ToList(),
                 }, cancellationToken);
 
@@ -84,12 +85,12 @@ namespace ShopRite.Platform.Products
 
                 return new Response
                 {
-                    Price = request.ProductRequest.Price,
-                    Description = request.ProductRequest.Description,
-                    Name = request.ProductRequest.Name,
-                    ProductType = request.ProductRequest.ProductType,
-                    ProductBrand = request.ProductRequest.ProductBrand,
-                    Stocks = request.ProductRequest.Stocks
+                    Price = request.ProductRequest.ProductJsonRequest.Price,
+                    Description = request.ProductRequest.ProductJsonRequest.Description,
+                    Name = request.ProductRequest.ProductJsonRequest.Name,
+                    ProductType = request.ProductRequest.ProductJsonRequest.ProductType,
+                    ProductBrand = request.ProductRequest.ProductJsonRequest.ProductBrand,
+                    Stocks = request.ProductRequest.ProductJsonRequest.Stocks
                     .Select(x => new Stock { Description = x.Description, Quantity = x.Quantity }).ToList(),
                 };
             }
@@ -116,8 +117,13 @@ namespace ShopRite.Platform.Products
                 return url;
             }
         }
-
         public class ProductRequest
+        {
+            [FromJson]
+            public ProductJsonRequest ProductJsonRequest { get; set; }
+            public IFormFile Image { get; set; }
+        }
+        public class ProductJsonRequest
         {
             public string Name { get; set; }
             public string Description { get; set; }

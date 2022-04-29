@@ -2,6 +2,7 @@
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ShopRite.Core.DTOs;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -83,9 +84,5 @@ namespace ShopRite.API.Controllers
             return Ok(s3Objects);
         }
     }
-    public class S3ObjectDto
-    {
-        public string Name { get; set; }
-        public string PresignedUrl { get; set; }
-    }
 }
+   
