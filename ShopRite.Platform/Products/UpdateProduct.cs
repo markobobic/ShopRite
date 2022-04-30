@@ -64,7 +64,7 @@ namespace ShopRite.Platform.Products
                     Name = request.Request.Name,
                     Description = request.Request.Description,
                     Price = request.Request.Price,
-                    PictureUrl = request.Request.PictureUrl,
+                    ImagePreSignedUrl = request.Request.PictureUrl,
                     ProductBrand = request.Request.Brand,
                     ProductType = request.Request.Type,
                     Stocks = existingProduct.Stocks
@@ -79,7 +79,7 @@ namespace ShopRite.Platform.Products
                     Name = product.Name,
                     Price = product.Price,
                     Stocks = existingProduct.Stocks,
-                    PictureUrl = product.PictureUrl,
+                    PictureUrl = product.ImagePreSignedUrl,
                     Type = product.ProductType,
                     Brand = product.ProductBrand
                 };

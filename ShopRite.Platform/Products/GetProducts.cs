@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Linq;
-using Raven.Client.Documents.Session;
 using ShopRite.Core.Enumerations;
 using ShopRite.Core.Extensions;
 using ShopRite.Domain;
@@ -42,8 +41,9 @@ namespace ShopRite.Platform.Products
             public string Brand { get; set; }
             public string Type { get; set; }
             public List<Stock> Stocks { get; set; }
-            public string PictureUrl { get; internal set; }
-            
+            public string ImageUrl { get; set; }
+            public string ImagePreSignedUrl { get; set; }
+
         }
 
         public class QueryHandler : IRequestHandler<Query, PaginatedList<ProductDTO>>
@@ -57,8 +57,8 @@ namespace ShopRite.Platform.Products
             public async Task<PaginatedList<ProductDTO>> Handle(Query request, CancellationToken cancellationToken)
             {
                 using var session = _db.OpenAsyncSession();
-                var products =  session.Query<Product>().ProjectInto<Product>();
-                
+                var products = session.Query<Product>().ProjectInto<Product>();
+
                 var sorts = new Dictionary<string, Expression<Func<Product, object>>>
                      {
                         {"price", x => x.Price},
@@ -71,19 +71,19 @@ namespace ShopRite.Platform.Products
                         {"type", x => x.ProductType == ProductType.FromValue(request.TypeName)},
                         {"brand", x => x.ProductBrand == ProductBrand.FromValue(request.BrandName)}
                     };
-                
-                products = string.IsNullOrEmpty(request.Filter) ? 
+
+                products = string.IsNullOrEmpty(request.Filter) ?
                     products : products.Where(filter?.GetValueOrDefault(request.Filter));
-                
+
                 products = string.IsNullOrEmpty(request.Search) ?
                     products : products.Search(c => c.Name, $"*{request.Search}*");
-                
-                if(request.SortOrder is not null)
+
+                if (request.SortOrder is not null)
                 {
                     products = request.SortAscending ? products.OrderBy(sorts?.GetValueOrDefault(request.SortOrder))
                                                   : products.OrderByDescending(sorts?.GetValueOrDefault(request.SortOrder));
                 }
-                
+
                 var productsToList = (await products.ToPagination(request.PageNumber, request.Limit, cancellationToken));
 
                 return new PaginatedList<ProductDTO>
@@ -100,10 +100,11 @@ namespace ShopRite.Platform.Products
                         Name = x.Name,
                         Brand = x.ProductBrand,
                         Type = x.ProductType,
-                        PictureUrl = x.PictureUrl,
+                        ImagePreSignedUrl = x.ImagePreSignedUrl,
+                        ImageUrl = x.ImageUrl,
                         Stocks = x.Stocks,
                     }).ToList()
-                    
+
                 };
 
             }
