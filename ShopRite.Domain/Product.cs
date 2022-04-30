@@ -8,6 +8,7 @@ namespace ShopRite.Domain
         public string Name { get; init; }
         public string Description { get; init; }
         public decimal Price { get; set; }
+        public string ImagePreSignedUrl { get; set; }
         public string ImageUrl { get; set; }
         public string ProductBrand { get; set; }
         public string ProductType { get; set; }

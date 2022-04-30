@@ -37,7 +37,9 @@ namespace ShopRite.Platform.Products
                     Price = product.Price,
                     Brand = product.ProductBrand,
                     Type = product.ProductType,
-                    Stocks = product.Stocks
+                    ImagePreSignedUrl = product.ImagePreSignedUrl,
+                    ImageUrl = product.ImageUrl,
+                    Stocks = product.Stocks,
                 };
             }
         }
@@ -50,6 +52,8 @@ namespace ShopRite.Platform.Products
             public decimal Price { get; set; }
             public string Brand { get; set; }
             public string Type { get; set; }
+            public string ImageUrl { get; set; }
+            public string ImagePreSignedUrl { get; set; }
             public List<Stock> Stocks { get; set; }
         }
     }

@@ -23,8 +23,8 @@ namespace ShopRite.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProduct.ProductRequest request)
         {
-           await _mediator.Send(new CreateProduct.Command(request, request.Image));
-           return Ok();
+           var response = await _mediator.Send(new CreateProduct.Command(request, request.Image));
+           return Ok(response);
         }
         [HttpGet]
         public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParams parametars)
