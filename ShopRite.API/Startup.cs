@@ -1,20 +1,28 @@
 using Amazon.S3;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using Raven.DependencyInjection;
+using Raven.Identity;
 using ShopRite.Core.Configurations;
 using ShopRite.Core.Constants;
+using ShopRite.Core.Interfaces;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
+using ShopRite.Core.Services;
+using ShopRite.Domain;
 using StackExchange.Redis;
 using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Extensions;
 using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Integrations;
 using System.Reflection;
+using System.Text;
 
 namespace ShopRite.API
 {
@@ -33,7 +41,16 @@ namespace ShopRite.API
             services.AddDefaultAWSOptions(_configuration.GetAWSOptions());
             services.AddAWSService<IAmazonS3>();
             services.AddJsonMultipartFormDataSupport(JsonSerializerChoice.SystemText);
-
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Token:Key"])),
+                    ValidIssuer = _configuration["Token:Issuer"],
+                    ValidateIssuer = true,
+                };
+            });
             services.AddSingleton<IDocumentStore>(provider =>
             {
                 var store = new DocumentStore()
@@ -43,7 +60,11 @@ namespace ShopRite.API
                 };
                 store.Initialize();
                 return store;
-            });
+            })
+            .AddRavenDbAsyncSession()
+           .AddIdentity<AppUser, IdentityRole>()
+           .AddRavenDbIdentityStores<AppUser, IdentityRole>();
+
             services.AddMediatR(Assembly.Load(Assemblies.ShopRitePlatform));
             Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
             services.AddSingleton<IConnectionMultiplexer>(options =>
@@ -51,8 +72,8 @@ namespace ShopRite.API
                 var config = ConfigurationOptions.Parse(_dbConfig.Database.RedisDatabaseName, true);
                 return ConnectionMultiplexer.Connect(config);
             });
-            
 
+            services.AddScoped<ITokenService, TokenService>();
             AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
@@ -82,6 +103,7 @@ namespace ShopRite.API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
