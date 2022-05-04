@@ -1,9 +1,6 @@
-﻿using Ardalis.GuardClauses;
-using FluentValidation;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents.Session;
-using ShopRite.Core.Extensions;
 using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using System.Collections.Generic;

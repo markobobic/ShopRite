@@ -28,6 +28,8 @@ namespace ShopRite.API
 {
     public class Startup
     {
+        private const string Issuer = "Token:Issuer";
+        private const string Key = "Token:Key";
         private readonly IConfiguration _configuration;
         private readonly DatabaseConfig _dbConfig;
         public Startup(IConfiguration configuration)
@@ -61,8 +63,8 @@ namespace ShopRite.API
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Token:Key"])),
-                    ValidIssuer = _configuration["Token:Issuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration[Key])),
+                    ValidIssuer = _configuration[Issuer],
                     ValidateIssuer = true,
                     ValidateAudience = false
                 };
@@ -117,13 +119,10 @@ namespace ShopRite.API
                                 }
                             },
                             new string[] {}
-
                     }
                 });
             });
         }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseMiddleware<ExceptionMiddleware>();
