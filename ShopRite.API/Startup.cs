@@ -1,25 +1,35 @@
 using Amazon.S3;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Raven.Client.Documents;
+using Raven.DependencyInjection;
+using Raven.Identity;
 using ShopRite.Core.Configurations;
 using ShopRite.Core.Constants;
+using ShopRite.Core.Interfaces;
 using ShopRite.Core.Middleware;
 using ShopRite.Core.Pipelines;
+using ShopRite.Core.Services;
+using ShopRite.Domain;
 using StackExchange.Redis;
 using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Extensions;
 using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Integrations;
 using System.Reflection;
+using System.Text;
 
 namespace ShopRite.API
 {
     public class Startup
     {
+        private const string Issuer = "Token:Issuer";
+        private const string Key = "Token:Key";
         private readonly IConfiguration _configuration;
         private readonly DatabaseConfig _dbConfig;
         public Startup(IConfiguration configuration)
@@ -43,7 +53,23 @@ namespace ShopRite.API
                 };
                 store.Initialize();
                 return store;
+            })
+            .AddRavenDbAsyncSession()
+           .AddIdentity<AppUser, IdentityRole>()
+           .AddRavenDbIdentityStores<AppUser, IdentityRole>();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration[Key])),
+                    ValidIssuer = _configuration[Issuer],
+                    ValidateIssuer = true,
+                    ValidateAudience = false
+                };
             });
+
             services.AddMediatR(Assembly.Load(Assemblies.ShopRitePlatform));
             Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
             services.AddSingleton<IConnectionMultiplexer>(options =>
@@ -51,8 +77,8 @@ namespace ShopRite.API
                 var config = ConfigurationOptions.Parse(_dbConfig.Database.RedisDatabaseName, true);
                 return ConnectionMultiplexer.Connect(config);
             });
-            
 
+            services.AddScoped<ITokenService, TokenService>();
             AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
@@ -63,13 +89,40 @@ namespace ShopRite.API
                     .AsImplementedInterfaces()
                     .WithScopedLifetime();
             });
-            services.AddSwaggerGen(c =>
+            services.AddSwaggerGen(swagger =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShopRite.API", Version = "v1" });
+
+                swagger.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "JWT Token Authentication API",
+                    Description = "ASP.NET Core 3.1 Web API"
+                });
+                swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 12345abcdef\"",
+                });
+                swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                          new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            new string[] {}
+                    }
+                });
             });
         }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseMiddleware<ExceptionMiddleware>();
@@ -82,6 +135,7 @@ namespace ShopRite.API
 
             app.UseRouting();
            
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
