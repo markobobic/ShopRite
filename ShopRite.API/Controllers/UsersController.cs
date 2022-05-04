@@ -20,6 +20,7 @@ namespace ShopRite.API.Controllers
         public async Task<IActionResult> Register(RegisterUser.RegisterRequest request)
         {
             var response = await _mediator.Send(new RegisterUser.Command { RegisterRequest = request });
+            if (!response.IsSuccessful) return BadRequest(response.RegistrationErrors);
             return Ok(response);
         }
 

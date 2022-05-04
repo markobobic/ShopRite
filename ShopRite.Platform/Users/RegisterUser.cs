@@ -6,6 +6,8 @@ using Raven.Client.Documents.Session;
 using ShopRite.Core.Extensions;
 using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,15 +18,6 @@ namespace ShopRite.Platform.Users
         public class Command : IRequest<RegisterResponse>
         {
             public RegisterRequest RegisterRequest { get; set; }
-        }
-        public class Validator : AbstractValidator<Command>
-        {
-            public Validator()
-            {
-                RuleFor(x => x.RegisterRequest.Email).EmailAddress();
-                RuleFor(x => x.RegisterRequest.Password).MinimumLength(6);
-                RuleFor(x => x.RegisterRequest.FullName).NotEmpty();
-            }
         }
         public class Handler : IRequestHandler<Command, RegisterResponse>
         {
@@ -52,13 +45,22 @@ namespace ShopRite.Platform.Users
                     FullName = request.RegisterRequest.FullName,
                 };
                 var createUserResult = await  _userManager.CreateAsync(appUser, request.RegisterRequest.Password);
-                Guard.Against.False(createUserResult.Succeeded, "Registration failed");
-                await _userManager.AddToRoleAsync(appUser, AppUser.AdminRole);
-                await _signInManager.SignInAsync(appUser, true);
-                
-                await _db.SaveChangesAsync();
-                var token = _tokenService.CreateToken(appUser);
-                return new RegisterResponse(token) { Email = request.RegisterRequest.Email, Username = request.RegisterRequest.Username };    
+                if (createUserResult.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(appUser, AppUser.AdminRole);
+                    await _signInManager.SignInAsync(appUser, true);
+
+                    await _db.SaveChangesAsync();
+                    var token = _tokenService.CreateToken(appUser);
+                    return new RegisterResponse(token) { IsSuccessful = true, Email = request.RegisterRequest.Email, Username = request.RegisterRequest.Username };
+                }
+                return new RegisterResponse(string.Empty) 
+                {
+                    IsSuccessful = false, 
+                    Email = string.Empty, 
+                    Username = string.Empty, 
+                    RegistrationErrors = createUserResult.Errors.Select(x => x.Description).ToList() 
+                };
             }
         }
         public class RegisterResponse
@@ -67,9 +69,11 @@ namespace ShopRite.Platform.Users
             {
                 Token = token;
             }
+            public bool IsSuccessful { get; set; }
             public string Email { get; set; }
             public string Username { get; set; }
             public string Token { get; set; }
+            public List<string> RegistrationErrors { get; set; }
         }
         public class RegisterRequest
         {
