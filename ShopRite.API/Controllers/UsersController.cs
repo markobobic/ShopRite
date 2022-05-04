@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using MediatR;
 using ShopRite.Platform.Users;
+using ShopRite.Core.Responses;
 
 namespace ShopRite.API.Controllers
 {
@@ -20,6 +21,15 @@ namespace ShopRite.API.Controllers
         {
             var response = await _mediator.Send(new RegisterUser.Command { RegisterRequest = request });
             return Ok(response);
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginUser.LoginRequest request)
+        {
+            var response = await _mediator.Send(new LoginUser.Command { LoginRequest = request });
+            if (!response.UserExist || !response.SignInResult) return Unauthorized(new ApiResponse(401));
+            return Ok(response.UserSuccessResponse);
+            
         }
     }
 }

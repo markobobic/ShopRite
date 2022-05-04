@@ -1,4 +1,6 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ShopRite.Core.Constants;
@@ -20,12 +22,14 @@ namespace ShopRite.API.Controllers
         {
             _mediator = mediator;
         }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProduct.ProductRequest request)
         {
            var response = await _mediator.Send(new CreateProduct.Command(request, request.Image));
            return Ok(response);
         }
+       
         [HttpGet]
         public async Task<IActionResult> GetAllProducts([FromQuery] ProductQueryParams parametars)
         {
@@ -52,6 +56,7 @@ namespace ShopRite.API.Controllers
         [HttpGet("brands")]
         public IActionResult GetBrands() => Ok(ProductBrand.List.Select(x => x.Value).ToList());
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut]
         public async Task<IActionResult> UpdateProd(UpdateProduct.ProductUpdateRequest request)
         {
