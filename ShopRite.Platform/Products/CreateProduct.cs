@@ -1,17 +1,11 @@
-﻿using Amazon.S3;
-using Amazon.S3.Model;
-using Ardalis.GuardClauses;
-using FluentValidation;
+﻿using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Raven.Client.Documents;
-using ShopRite.Core.Configurations;
 using ShopRite.Core.Enumerations;
-using ShopRite.Core.Extensions;
+using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using Swashbuckle.AspNetCore.JsonMultipartFormDataSupport.Attributes;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -54,21 +48,16 @@ namespace ShopRite.Platform.Products
         public class Handler : IRequestHandler<Command, Response>
         {
             private readonly IDocumentStore _db;
-            private readonly IAmazonS3 _s3Client;
-            private readonly IConfiguration _configuration;
-            private readonly AWSConfig _awsConfig;
-
-            public Handler(IDocumentStore db, IAmazonS3 s3Client, IConfiguration configuration)
+            private readonly IAwsService _awsService;
+            public Handler(IDocumentStore db, IAwsService awsService)
             {
                 _db = db;
-                _s3Client = s3Client;
-                _configuration = configuration;
-                _awsConfig = _configuration.Get<AWSConfig>();
+                _awsService = awsService;
             }
             public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
             {
                 if (request.Image != null)
-                    await UploadImageToS3Bucket(request);
+                    await _awsService.UploadImageToS3Bucket(request.Image);
 
                 using var session = _db.OpenAsyncSession();
                 await session.StoreAsync(new Product
@@ -77,8 +66,8 @@ namespace ShopRite.Platform.Products
                     Description = request.ProductRequest.ProductJsonRequest.Description,
                     Name = request.ProductRequest.ProductJsonRequest.Name,
                     ProductBrand = request.ProductRequest.ProductJsonRequest.ProductBrand,
-                    ImageUrl = request.Image == null ? null : CreateUrlOfFile(request),
-                    ImagePreSignedUrl = request.Image == null ? null : ReturnPreSignedURLOfUploadedImage(request),
+                    ImageUrl = request.Image == null ? null : _awsService.CreateUrlOfFile(request.Image),
+                    ImagePreSignedUrl = request.Image == null ? null : _awsService.ReturnPreSignedURLOfUploadedImage(request.Image),
                     ProductType = request.ProductRequest.ProductJsonRequest.ProductType,
                     Stocks = request.ProductRequest.ProductJsonRequest.Stocks
                     .Select(x => new Stock { Description = x.Description, Quantity = x.Quantity }).ToList(),
@@ -93,40 +82,13 @@ namespace ShopRite.Platform.Products
                     Name = request.ProductRequest.ProductJsonRequest.Name,
                     ProductType = request.ProductRequest.ProductJsonRequest.ProductType,
                     ProductBrand = request.ProductRequest.ProductJsonRequest.ProductBrand,
-                    ImageUrl = CreateUrlOfFile(request),
-                    ImagePreSignedUrl = request.Image == null ? null : ReturnPreSignedURLOfUploadedImage(request),
+                    ImageUrl = _awsService.CreateUrlOfFile(request.Image),
+                    ImagePreSignedUrl = request.Image == null ? null : _awsService.ReturnPreSignedURLOfUploadedImage(request.Image),
                     Stocks = request.ProductRequest.ProductJsonRequest.Stocks
                     .Select(x => new Stock { Description = x.Description, Quantity = x.Quantity }).ToList(),
                 };
             }
-
-            private string CreateUrlOfFile(Command request) =>
-                $@"https://{_awsConfig.AWS.BucketName}.s3.amazonaws.com/{request.Image.FileName}";
-
-            private async Task UploadImageToS3Bucket(Command request)
-            {
-                var awsRequest = new PutObjectRequest()
-                {
-                    BucketName = _awsConfig.AWS.BucketName,
-                    Key = request.Image.FileName,
-                    InputStream = request.Image.OpenReadStream()
-                };
-                awsRequest.Metadata.Add("Content-Type", request.Image.ContentType);
-                var response = await _s3Client.PutObjectAsync(awsRequest);
-                Guard.Against.False(response.HttpStatusCode.ToInt() == 200, "S3 bucket didn't upload file.");
-
-            }
-            private string ReturnPreSignedURLOfUploadedImage(Command request)
-            {
-                GetPreSignedUrlRequest urlRequest = new GetPreSignedUrlRequest();
-                urlRequest.BucketName = _awsConfig.AWS.BucketName;
-                urlRequest.Key = request.Image.FileName;
-                urlRequest.Expires = DateTime.Now.AddHours(1);
-                urlRequest.Protocol = Protocol.HTTP;
-                string url = _s3Client.GetPreSignedURL(urlRequest);
-
-                return url;
-            }
+            
         }
         public class ProductRequest
         {

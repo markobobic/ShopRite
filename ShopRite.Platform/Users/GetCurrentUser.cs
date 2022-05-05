@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Raven.Client.Documents.Session;
 using ShopRite.Domain;
 using System.Security.Claims;
 using System.Threading;
