@@ -10,4 +10,9 @@
         public const int DefaultLimit = 20;
         public const int FirstPageNumber = 1;
     }
+    public static class UserRole
+    {
+        public const string Admin = "Admin";
+        public const string Buyer = "Buyer";
+    }
 }

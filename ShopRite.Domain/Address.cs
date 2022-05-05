@@ -1,10 +1,20 @@
-﻿namespace ShopRite.Domain
+﻿using System.Text.Json.Serialization;
+
+namespace ShopRite.Domain
 {
     public record Address
     {
-        public string Address1 { get; init; }
-        public string Address2 { get; init; }
+        public string Street { get; init; }
         public string City { get; init; }
         public string ZipCode { get; init; }
+        
+        private string _fullAddress;
+        [JsonIgnore]
+        public string FullAddress
+        {
+            get { return _fullAddress; }
+            private set { _fullAddress = $"{Street} {City} {ZipCode}"; }
+        }
+
     }
 }

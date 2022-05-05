@@ -1,6 +1,8 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents.Session;
+using ShopRite.Core.Enumerations;
 using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using System.Collections.Generic;
@@ -15,6 +17,19 @@ namespace ShopRite.Platform.Users
         public class Command : IRequest<RegisterResponse>
         {
             public RegisterRequest RegisterRequest { get; set; }
+        }
+        public class Validator : AbstractValidator<Command>
+        {
+            public Validator()
+            {
+                
+                RuleFor(x => x.RegisterRequest.UserRole).Must(ub =>
+                {
+                    UserRoles.TryFromValue(ub, out var userRole);
+                    return userRole != null && userRole != string.Empty;
+                })
+                    .WithMessage("User role is not valid!");
+            }
         }
         public class Handler : IRequestHandler<Command, RegisterResponse>
         {
@@ -44,7 +59,7 @@ namespace ShopRite.Platform.Users
                 var createUserResult = await  _userManager.CreateAsync(appUser, request.RegisterRequest.Password);
                 if (createUserResult.Succeeded)
                 {
-                    await _userManager.AddToRoleAsync(appUser, AppUser.AdminRole);
+                    await _userManager.AddToRoleAsync(appUser, request.RegisterRequest.UserRole);
                     await _signInManager.SignInAsync(appUser, true);
 
                     await _db.SaveChangesAsync();
@@ -56,6 +71,7 @@ namespace ShopRite.Platform.Users
                     IsSuccessful = false, 
                     Email = string.Empty, 
                     Username = string.Empty, 
+                    Address = request.RegisterRequest.Address,
                     RegistrationErrors = createUserResult.Errors.Select(x => x.Description).ToList() 
                 };
             }
@@ -70,6 +86,7 @@ namespace ShopRite.Platform.Users
             public string Email { get; set; }
             public string Username { get; set; }
             public string Token { get; set; }
+            public Address Address { get; set; }
             public List<string> RegistrationErrors { get; set; }
         }
         public class RegisterRequest
@@ -78,6 +95,8 @@ namespace ShopRite.Platform.Users
             public string Email { get; set; }
             public string Password { get; set; }
             public string Username { get; set; }
+            public string UserRole { get; set; }
+            public Address Address { get; set; }
         }
     }
 }
