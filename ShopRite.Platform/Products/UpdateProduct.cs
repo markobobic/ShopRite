@@ -54,9 +54,9 @@ namespace ShopRite.Platform.Products
                 using var session = _db.OpenAsyncSession();
                 var existingProduct = await session.LoadAsync<Product>(request.Request.Id, cancellationToken);
                 session.Advanced.Evict(existingProduct);
-                var excludedStocks = existingProduct.Stocks.Where(s => !request.Request.Stocks.Any(p => p.Id == s.Id)).ToList();
+                var excludedStocks = existingProduct.Stocks.Where(s => !request.Request.Stocks.Any(p => p.Size == s.Size)).ToList();
                 excludedStocks.AddRange(request.Request.Stocks);
-                existingProduct.Stocks = excludedStocks.OrderBy(o => o.Id).ToList();
+                existingProduct.Stocks = excludedStocks.OrderBy(o => o.Size).ToList();
 
                 var product = existingProduct with
                 {

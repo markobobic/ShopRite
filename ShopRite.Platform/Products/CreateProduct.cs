@@ -70,7 +70,7 @@ namespace ShopRite.Platform.Products
                     ImagePreSignedUrl = request.Image == null ? null : _awsService.ReturnPreSignedURLOfUploadedImage(request.Image),
                     ProductType = request.ProductRequest.ProductJsonRequest.ProductType,
                     Stocks = request.ProductRequest.ProductJsonRequest.Stocks
-                    .Select(x => new Stock { Description = x.Description, Quantity = x.Quantity }).ToList(),
+                    .Select(x => new Stock { Size = x.Description, Quantity = x.Quantity }).ToList(),
                 }, cancellationToken);
 
                 await session.SaveChangesAsync();
@@ -85,7 +85,7 @@ namespace ShopRite.Platform.Products
                     ImageUrl = _awsService.CreateUrlOfFile(request.Image),
                     ImagePreSignedUrl = request.Image == null ? null : _awsService.ReturnPreSignedURLOfUploadedImage(request.Image),
                     Stocks = request.ProductRequest.ProductJsonRequest.Stocks
-                    .Select(x => new Stock { Description = x.Description, Quantity = x.Quantity }).ToList(),
+                    .Select(x => new Stock { Size = x.Description, Quantity = x.Quantity }).ToList(),
                 };
             }
             
