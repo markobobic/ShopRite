@@ -80,6 +80,8 @@ namespace ShopRite.API
             });
 
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IAwsService, AwsService>();
+
             AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidatorPipelineBehavior<,>));
