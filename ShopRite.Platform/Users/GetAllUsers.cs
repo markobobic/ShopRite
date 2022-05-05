@@ -15,7 +15,6 @@ namespace ShopRite.Platform.Users
         public class Query : IRequest<List<UsersAllResponse>> { }
         public class QueryHandler : IRequestHandler<Query, List<UsersAllResponse>>
         {
-            private readonly IAsyncDocumentSession _db;
             private readonly UserManager<AppUser> _userManager;
 
             public QueryHandler(UserManager<AppUser> userManager)

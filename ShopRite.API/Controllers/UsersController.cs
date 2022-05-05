@@ -5,6 +5,7 @@ using ShopRite.Platform.Users;
 using ShopRite.Core.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using ShopRite.Core.Constants;
 
 namespace ShopRite.API.Controllers
 {
@@ -33,13 +34,14 @@ namespace ShopRite.API.Controllers
             if (!response.UserExist || !response.SignInResult) return Unauthorized(new ApiResponse(401));
             return Ok(response.UserSuccessResponse);
         }
-        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "Admin")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = UserRole.Admin)]
         [HttpGet]
         public async Task<IActionResult> GetUsersAsync()
         {
             var users = await _mediator.Send(new GetAllUsers.Query());
             return Ok(users);
         }
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = UserRole.Admin)]
         [HttpGet("currentUser")]
         public async Task<IActionResult> GetCurrentUserAsync()
         {
@@ -47,5 +49,14 @@ namespace ShopRite.API.Controllers
             if(user == null) return NotFound();
             return Ok(user);
         }
+        [HttpPut]
+        public async Task<IActionResult> UpdateUserAsync(UpdateUser.UpdateUserRequest request)
+        {
+            var response = await _mediator.Send(new UpdateUser.Command { UpdateUserRequest = request });
+            if (response.DoesUserExist is false) return NotFound("User is not found.");
+            if (!response.IsPasswordChanged) return BadRequest("Something went wrong.");
+            return Ok(response.UserUpdateDto);
+        }
+
     }
 }
