@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents;
-using Raven.Client.Documents.Session;
 using ShopRite.Domain;
 using System.Collections.Generic;
 using System.Linq;
