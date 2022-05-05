@@ -68,9 +68,7 @@ namespace ShopRite.Platform.Products
             public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
             {
                 if (request.Image != null)
-                {
                     await UploadImageToS3Bucket(request);
-                }
 
                 using var session = _db.OpenAsyncSession();
                 await session.StoreAsync(new Product
