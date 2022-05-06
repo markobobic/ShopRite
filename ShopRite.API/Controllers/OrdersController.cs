@@ -1,6 +1,8 @@
-﻿using MediatR;
+﻿using Coravel.Mailer.Mail.Interfaces;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ShopRite.Core.Services;
 using ShopRite.Platform.Orders;
 using System.Threading.Tasks;
 
@@ -19,8 +21,8 @@ namespace ShopRite.API.Controllers
         [HttpPost]
         public async Task<IActionResult> PostOrder(CreateOrder.CreateOrderRequest request)
         {
-           await _mediator.Send(new CreateOrder.Command { CreateOrderRequest = request });
-            return Ok();
+           var response = await _mediator.Send(new CreateOrder.Command { CreateOrderRequest = request });
+           return Ok(response);
         }
     }
 }

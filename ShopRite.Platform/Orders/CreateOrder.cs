@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using Coravel.Mailer.Mail.Interfaces;
+using MediatR;
 using Raven.Client.Documents.Session;
 using ShopRite.Domain;
 using StackExchange.Redis;
@@ -20,18 +21,20 @@ namespace ShopRite.Platform.Orders
         {
             private readonly IDatabase _redis;
             private readonly IAsyncDocumentSession _db;
+            private readonly IMailer _mailer;
 
-            public Handler(IConnectionMultiplexer redis, IAsyncDocumentSession db)
+            public Handler(IConnectionMultiplexer redis, IAsyncDocumentSession db, IMailer mailer)
             {
                 _redis = redis.GetDatabase();
                 _db = db;
+                _mailer = mailer;
             }
-            // neko je narucio Nike proizvod Quantity 3 patike stocks size 32 i size 34
             public async Task<CreateOrderResponse> Handle(Command request, CancellationToken cancellationToken)
             {
                 var data = await _redis.StringGetAsync(request.CreateOrderRequest.BasketId);
+                var response = new CreateOrderResponse();
                 var basket = data.IsNullOrEmpty ? null : JsonSerializer.Deserialize<CustomerBasket>(data);
-                foreach (var orderItem in basket.Items)
+                foreach (var orderItem in basket?.Items)
                 {
                     var product = await _db.LoadAsync<Product>(orderItem.Product.Id);
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
@@ -39,14 +42,34 @@ namespace ShopRite.Platform.Orders
                     {
                         if (stocksDict.ContainsKey(requestedSize.Size))
                         {
-                           var currentQuantity = product.Stocks.FirstOrDefault(x => x.Size == requestedSize.Size);
-                            currentQuantity.Quantity -= requestedSize.Quantity;
+                            var currentQuantity = product.Stocks
+                                                 .FirstOrDefault(x => x.Size == requestedSize.Size);
+                            var isSuccessful = TrySubtractFromStock(product, requestedSize, currentQuantity, response);
+                            if (isSuccessful is not true) break;
                         }
                     }
-                  
+
                 }
-                await _db.SaveChangesAsync(cancellationToken);
-                return new CreateOrderResponse();
+                if (!response.SuccessfulOrders[false].Any())
+                    await _db.SaveChangesAsync();
+
+                return response;
+            }
+
+            private bool TrySubtractFromStock(Product product, Stock requestedSize, Stock currentQuantity, CreateOrderResponse response)
+            {
+                if (currentQuantity.Quantity >= requestedSize.Quantity)
+                {
+                    currentQuantity.Quantity -= requestedSize.Quantity;
+                    response.SuccessfulOrders[true]
+                        .Add(new OrderDTO { Id = product.Id, Size = currentQuantity.Size });
+                    return true;
+                }
+                response.SuccessfulOrders[false]
+                    .Add(new OrderDTO { Id = product.Id, Size = currentQuantity.Size });
+
+                response.ProductsOutOfStack.Add($"Product {product.Name} is out of stack for size {requestedSize.Size}.");
+                return false;
             }
         }
         public class CreateOrderRequest
@@ -57,6 +80,18 @@ namespace ShopRite.Platform.Orders
 
         public class CreateOrderResponse
         {
+            public List<string> ProductsOutOfStack { get; set; } = new();
+            public Dictionary<bool, List<OrderDTO>> SuccessfulOrders { get; set; }
+                      = new()
+                      {
+                          { true, new List<OrderDTO>() },
+                          { false, new List<OrderDTO>() },
+                      };
+        }
+        public class OrderDTO
+        {
+            public string Id { get; set; }
+            public string Size { get; set; }
         }
     }
 }
