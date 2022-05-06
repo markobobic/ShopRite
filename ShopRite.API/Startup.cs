@@ -1,5 +1,4 @@
 using Amazon.S3;
-using Coravel;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -82,7 +81,13 @@ namespace ShopRite.API
 
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAwsService, AwsService>();
-            services.AddMailer(_configuration);
+            services
+                .AddFluentEmail(_globalConfig.Emails.CompanyMail)
+                .AddRazorRenderer()
+                .AddSmtpSender(_globalConfig.FluentEmail.Host,
+                               _globalConfig.FluentEmail.Port,
+                               _globalConfig.FluentEmail.Username,
+                               _globalConfig.FluentEmail.Password);
 
             AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
@@ -102,7 +107,7 @@ namespace ShopRite.API
                 {
                     Version = "v1",
                     Title = "JWT Token Authentication API",
-                    Description = "ASP.NET Core 3.1 Web API"
+                    Description = "SHOP RITE API"
                 });
                 swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
                 {

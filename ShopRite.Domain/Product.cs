@@ -12,6 +12,7 @@ namespace ShopRite.Domain
         public string ImageUrl { get; set; }
         public string ProductBrand { get; set; }
         public string ProductType { get; set; }
+        public bool IsOutOfStock { get; set; } = false;
         [JsonIgnore]
         public List<Stock> Stocks { get; set; } = new List<Stock>();
     }

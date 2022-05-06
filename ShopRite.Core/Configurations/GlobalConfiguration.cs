@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace ShopRite.Core.Configurations
 {
@@ -16,10 +15,20 @@ namespace ShopRite.Core.Configurations
         public string BucketName { get; set; }
     }
 
-    public class Coravel
+    public class FluentEmail
     {
-        [JsonPropertyName("Mail")]
-        public Mail Mail { get; set; }
+
+        [JsonPropertyName("Host")]
+        public string Host { get; set; }
+
+        [JsonPropertyName("Port")]
+        public int Port { get; set; }
+
+        [JsonPropertyName("Username")]
+        public string Username { get; set; }
+
+        [JsonPropertyName("Password")]
+        public string Password { get; set; }
     }
 
     public class Database
@@ -38,6 +47,8 @@ namespace ShopRite.Core.Configurations
     {
         [JsonPropertyName("RetailMail")]
         public string RetailMail { get; set; }
+        [JsonPropertyName("CompanyMail")]
+        public string CompanyMail { get; set; }
     }
 
     public class Logging
@@ -58,23 +69,7 @@ namespace ShopRite.Core.Configurations
         public string MicrosoftHostingLifetime { get; set; }
     }
 
-    public class Mail
-    {
-        [JsonPropertyName("Driver")]
-        public string Driver { get; set; }
-
-        [JsonPropertyName("Host")]
-        public string Host { get; set; }
-
-        [JsonPropertyName("Port")]
-        public int Port { get; set; }
-
-        [JsonPropertyName("Username")]
-        public string Username { get; set; }
-
-        [JsonPropertyName("Password")]
-        public string Password { get; set; }
-    }
+    
 
     public class GlobalConfiguration
     {
@@ -90,8 +85,8 @@ namespace ShopRite.Core.Configurations
         [JsonPropertyName("Token")]
         public Token Token { get; set; }
 
-        [JsonPropertyName("Coravel")]
-        public Coravel Coravel { get; set; }
+        [JsonPropertyName("FluentEmail")]
+        public FluentEmail FluentEmail { get; set; }
 
         [JsonPropertyName("Emails")]
         public Emails Emails { get; set; }

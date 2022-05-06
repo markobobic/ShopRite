@@ -1,8 +1,5 @@
-﻿using Coravel.Mailer.Mail.Interfaces;
-using MediatR;
-using Microsoft.AspNetCore.Http;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ShopRite.Core.Services;
 using ShopRite.Platform.Orders;
 using System.Threading.Tasks;
 

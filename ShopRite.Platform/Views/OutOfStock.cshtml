@@ -1,0 +1,13 @@
+﻿@model System.Collections.Generic.IEnumerable<ShopRite.Platform.Orders.CreateOrder.OrderDTO>
+
+    <h2 style= "color: red">Products that are out of stock</h2>
+@foreach(var order in Model)
+{
+    <ul>
+        <li>Product name: @order.Name</li>
+        <li>Product size: @order.Size</li>
+    </ul>
+    <b></b>
+}
+
+
