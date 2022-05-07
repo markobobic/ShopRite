@@ -32,11 +32,11 @@ namespace ShopRite.API
         private const string Issuer = "Token:Issuer";
         private const string Key = "Token:Key";
         private readonly IConfiguration _configuration;
-        private readonly DatabaseConfig _dbConfig;
+        private readonly GlobalConfiguration _globalConfig;
         public Startup(IConfiguration configuration)
         {
             _configuration = configuration;
-            _dbConfig = _configuration.Get<DatabaseConfig>();
+            _globalConfig = _configuration.Get<GlobalConfiguration>();
         }
         public void ConfigureServices(IServiceCollection services)
         {
@@ -49,8 +49,8 @@ namespace ShopRite.API
             {
                 var store = new DocumentStore()
                 {
-                    Urls = _dbConfig.Database.Urls,
-                    Database = _dbConfig.Database.RavenDatabaseName
+                    Urls = _globalConfig.Database.Urls,
+                    Database = _globalConfig.Database.RavenDatabaseName
                 };
                 store.Initialize();
                 return store;
@@ -75,12 +75,19 @@ namespace ShopRite.API
             Assembly core = Assembly.Load(Assemblies.ShopRiteCore);
             services.AddSingleton<IConnectionMultiplexer>(options =>
             {
-                var config = ConfigurationOptions.Parse(_dbConfig.Database.RedisDatabaseName, true);
+                var config = ConfigurationOptions.Parse(_globalConfig.Database.RedisDatabaseName, true);
                 return ConnectionMultiplexer.Connect(config);
             });
 
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IAwsService, AwsService>();
+            services
+                .AddFluentEmail(_globalConfig.Emails.CompanyMail)
+                .AddRazorRenderer()
+                .AddSmtpSender(_globalConfig.FluentEmail.Host,
+                               _globalConfig.FluentEmail.Port,
+                               _globalConfig.FluentEmail.Username,
+                               _globalConfig.FluentEmail.Password);
 
             AssemblyScanner.FindValidatorsInAssembly(core)
                 .ForEach(x => services.AddTransient(typeof(IValidator), x.ValidatorType));
@@ -92,6 +99,7 @@ namespace ShopRite.API
                     .AsImplementedInterfaces()
                     .WithScopedLifetime();
             });
+            services.AddScoped<IEmailService, EmailService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSwaggerGen(swagger =>
             {
@@ -100,7 +108,7 @@ namespace ShopRite.API
                 {
                     Version = "v1",
                     Title = "JWT Token Authentication API",
-                    Description = "ASP.NET Core 3.1 Web API"
+                    Description = "SHOP RITE API"
                 });
                 swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
                 {

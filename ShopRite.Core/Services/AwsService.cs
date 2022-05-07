@@ -15,18 +15,18 @@ namespace ShopRite.Core.Services
     {
         private readonly IConfiguration _configuration;
         private readonly IAmazonS3 _s3Client;
-        private readonly AWSConfig _awsConfig;
+        private readonly GlobalConfiguration _globalConfig;
 
         public AwsService(IConfiguration configuration, IAmazonS3 s3Client)
         {
             _configuration = configuration;
             _s3Client = s3Client;
-            _awsConfig = _configuration.Get<AWSConfig>();
+            _globalConfig = _configuration.Get<GlobalConfiguration>();
         }
         public string ReturnPreSignedURLOfUploadedImage(IFormFile file)
         {
             GetPreSignedUrlRequest urlRequest = new GetPreSignedUrlRequest();
-            urlRequest.BucketName = _awsConfig.AWS.BucketName;
+            urlRequest.BucketName = _globalConfig.AWS.BucketName;
             urlRequest.Key = file.FileName;
             urlRequest.Expires = DateTime.Now.AddHours(1);
             urlRequest.Protocol = Protocol.HTTP;
@@ -35,12 +35,12 @@ namespace ShopRite.Core.Services
             return url;
         }
         public string CreateUrlOfFile(IFormFile file) =>
-                $@"https://{_awsConfig.AWS.BucketName}.s3.amazonaws.com/{file.FileName}";
+                $@"https://{_globalConfig.AWS.BucketName}.s3.amazonaws.com/{file.FileName}";
         public async Task UploadImageToS3Bucket(IFormFile file)
         {
             var awsRequest = new PutObjectRequest()
             {
-                BucketName = _awsConfig.AWS.BucketName,
+                BucketName = _globalConfig.AWS.BucketName,
                 Key = file.FileName,
                 InputStream = file.OpenReadStream()
             };

@@ -38,7 +38,7 @@ namespace ShopRite.Platform.Basket
                 {
                     var product = await session.LoadAsync<Product>(productDto.ProductId);
                     customerBasket.Items
-                        .Add(new BasketItem() { Product = product, Quantity = productDto.Quantity });
+                        .Add(new BasketItem() { Product = product, Sizes = productDto.Sizes });
                 }
                 
                 var created = await _db.
@@ -57,7 +57,7 @@ namespace ShopRite.Platform.Basket
             public class ProductBasketDTO
             {
                 public string ProductId { get; set; }
-                public int Quantity { get; set; }
+                public List<Stock> Sizes { get; set; } = new List<Stock>();
             }
 
         }
