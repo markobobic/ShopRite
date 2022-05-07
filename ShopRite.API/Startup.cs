@@ -99,6 +99,7 @@ namespace ShopRite.API
                     .AsImplementedInterfaces()
                     .WithScopedLifetime();
             });
+            services.AddScoped<IEmailService, EmailService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSwaggerGen(swagger =>
             {

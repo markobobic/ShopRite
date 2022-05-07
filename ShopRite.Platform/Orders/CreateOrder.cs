@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.PlatformAbstractions;
 using Raven.Client.Documents.Session;
 using ShopRite.Core.Configurations;
+using ShopRite.Core.DTOs;
+using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using StackExchange.Redis;
 using System.Collections.Generic;
@@ -25,18 +27,18 @@ namespace ShopRite.Platform.Orders
         {
             private readonly IDatabase _redis;
             private readonly IAsyncDocumentSession _db;
-            private readonly IFluentEmail _fluentEmail;
-            private readonly GlobalConfiguration _globalConfig;
+            private readonly IEmailService _emailService;
+            private readonly GlobalConfiguration _config;
 
             public Handler(IConnectionMultiplexer redis,
                            IAsyncDocumentSession db,
                            IConfiguration config,
-                           IFluentEmail fluentEmail)
+                           IEmailService emailService)
             {
                 _redis = redis.GetDatabase();
                 _db = db;
-                _fluentEmail = fluentEmail;
-                _globalConfig = config.Get<GlobalConfiguration>();
+                _emailService = emailService;
+                _config = config.Get<GlobalConfiguration>();
             }
             public async Task<CreateOrderResponse> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -47,34 +49,30 @@ namespace ShopRite.Platform.Orders
                 {
                     var product = await _db.LoadAsync<Product>(orderItem.Product.Id);
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
-                    var isOutOfStock = basket.Items.Sum(x => x.Sizes.Sum(x => x.Quantity)) > stocksDict.Sum(x => x.Value);
+                    var isOutOfStock = TotalSumFromBasket(basket) > CurrentStockInDatabase(stocksDict);
                     foreach (var requestedSize in orderItem.Sizes)
                     {
-                        if (stocksDict.ContainsKey(requestedSize.Size))
-                        {
-                            var currentQuantity = product.Stocks
-                                                 .FirstOrDefault(x => x.Size == requestedSize.Size);
-                            var isSuccessful = TrySubtractFromStock(product,
-                                                                    requestedSize,
-                                                                    currentQuantity,
-                                                                    response,
-                                                                    isOutOfStock);
-
-                        }
+                        SubstractFromStock(response, product, stocksDict, isOutOfStock, requestedSize);
                     }
                 }
-                await _db.SaveChangesAsync();
+                
                 if (response.SuccessfulOrders[false].Any())
-                {
-                    var path = Path.GetFullPath(Path.Combine(PlatformServices.Default.Application.ApplicationBasePath, "..", "..", "..", "..", "ShopRite.Platform", "Views"));
-                    _fluentEmail.To(_globalConfig.Emails.RetailMail)
-                                .UsingTemplateFromFile(@$"{path}\OutOfStock.cshtml", response.SuccessfulOrders[false]);
-                    await _fluentEmail.SendAsync();
-                }
+                    await _emailService.SendEmailOutOfStock(response.SuccessfulOrders[false]);
 
+                await _db.SaveChangesAsync();
+                
                 return response;
             }
 
+            private void SubstractFromStock(CreateOrderResponse response, Product product, Dictionary<string, int> stocksDict, bool isOutOfStock, Stock requestedSize)
+            {
+                if (stocksDict.ContainsKey(requestedSize.Size))
+                {
+                    var currentQuantity = product.Stocks
+                                         .FirstOrDefault(x => x.Size == requestedSize.Size);
+                    TrySubtractFromStock(product, requestedSize, currentQuantity, response, isOutOfStock);
+                }
+            }
             private bool TrySubtractFromStock(Product product, Stock requestedSize, Stock currentQuantity, CreateOrderResponse response, bool isOutOfStock)
             {
                 if (currentQuantity.Quantity >= requestedSize.Quantity && !isOutOfStock)
@@ -94,6 +92,10 @@ namespace ShopRite.Platform.Orders
 
                 return false;
             }
+            private static int CurrentStockInDatabase(Dictionary<string, int> stocksDict) => stocksDict.Sum(x => x.Value);
+            private static int TotalSumFromBasket(CustomerBasket basket) => basket.Items.Sum(x => x.Sizes.Sum(x => x.Quantity));
+
+           
         }
         public class CreateOrderRequest
         {
@@ -111,10 +113,6 @@ namespace ShopRite.Platform.Orders
                           { false, new List<OrderDTO>() },
                       };
         }
-        public class OrderDTO
-        {
-            public string Name { get; set; }
-            public string Size { get; set; }
-        }
+       
     }
 }
