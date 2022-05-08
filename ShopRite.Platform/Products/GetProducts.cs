@@ -59,18 +59,10 @@ namespace ShopRite.Platform.Products
                 using var session = _db.OpenAsyncSession();
                 var products = session.Query<Product>().ProjectInto<Product>();
 
-                var sorts = new Dictionary<string, Expression<Func<Product, object>>>
-                     {
-                        {"price", x => x.Price},
-                        {"name", x => x.Name},
-                        {"brand", x => x.ProductBrand}
-                    };
-
-                var filter = new Dictionary<string, Expression<Func<Product, bool>>>
-                     {
-                        {"type", x => x.ProductType == ProductType.FromValue(request.TypeName)},
-                        {"brand", x => x.ProductBrand == ProductBrand.FromValue(request.BrandName)}
-                    };
+                Dictionary<string, Expression<Func<Product, object>>> sorts;
+                Dictionary<string, Expression<Func<Product, bool>>> filter;
+                
+                SetSearchFilters(request, out sorts, out filter);
 
                 products = string.IsNullOrEmpty(request.Filter) ?
                     products : products.Where(filter?.GetValueOrDefault(request.Filter));
@@ -107,6 +99,21 @@ namespace ShopRite.Platform.Products
 
                 };
 
+            }
+
+            private void SetSearchFilters(Query request, out Dictionary<string, Expression<Func<Product, object>>> sorts, out Dictionary<string, Expression<Func<Product, bool>>> filter)
+            {
+                sorts = new Dictionary<string, Expression<Func<Product, object>>>
+                     {
+                        {"price", x => x.Price},
+                        {"name", x => x.Name},
+                        {"brand", x => x.ProductBrand}
+                    };
+                filter = new Dictionary<string, Expression<Func<Product, bool>>>
+                     {
+                        {"type", x => x.ProductType == ProductType.FromValue(request.TypeName)},
+                        {"brand", x => x.ProductBrand == ProductBrand.FromValue(request.BrandName)}
+                    };
             }
         }
     }

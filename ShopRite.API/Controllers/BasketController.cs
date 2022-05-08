@@ -25,6 +25,7 @@ namespace ShopRite.API.Controllers
         public async Task<IActionResult> UpdateBasket(UpdateBasket.BasketUpdateRequest request)
         {
             var basket = await _mediator.Send(new UpdateBasket.Command { Request = request });
+            if (basket.IsBasketUpdated is false) return StatusCode(StatusCodes.Status500InternalServerError);
             return Ok(basket);
         }
         [HttpDelete]
