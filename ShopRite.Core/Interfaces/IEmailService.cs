@@ -6,6 +6,7 @@ namespace ShopRite.Core.Interfaces
 {
     public interface IEmailService
     {
-        Task SendEmailOutOfStock(List<OrderDTO> orders);
+        Task SendEmailOutOfStock(OrderDTO order);
+        Task SendEmailSuccessfulOrder(OrderDTO order, string buyerEmail);
     }
 }

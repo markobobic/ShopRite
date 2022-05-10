@@ -38,17 +38,23 @@ namespace ShopRite.Platform.Basket
                 {
                     var product = await session.LoadAsync<Product>(productDto.ProductId);
                     customerBasket.Items
-                        .Add(new BasketItem() { Product = product, Sizes = productDto.Sizes });
+                        .Add(new BasketItem() 
+                        {
+                            Id = product.Id,
+                            Name = product.Name,
+                            Price = product.Price,
+                            ProductBrand = product.ProductBrand,
+                            ProductType = product.ProductType,
+                            Sizes = productDto.Sizes 
+                        });
                 }
                 
-                var created = await _db.
+                var isCreated = await _db.
                     StringSetAsync(customerBasket.Id,
                     JsonSerializer.Serialize(customerBasket),
                     TimeSpan.FromDays(ThirtyDays));
-                
-                Guard.Against.False(created, "Basket is not created.");
 
-               return new BasketUpdateResponse { CustomerBasket = customerBasket };
+               return new BasketUpdateResponse { CustomerBasket = customerBasket, IsBasketUpdated = isCreated };
             }
         }
         public class BasketUpdateRequest
@@ -65,6 +71,7 @@ namespace ShopRite.Platform.Basket
         public class BasketUpdateResponse
         {
             public CustomerBasket CustomerBasket { get; set; }
+            public bool IsBasketUpdated { get; set; }
         }
 
     }
