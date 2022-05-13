@@ -163,8 +163,7 @@ namespace ShopRite.API
             provider.UseScheduler(scheduler =>
             {
                 scheduler.Schedule<FinanceStatisticsService>()
-                .EveryMinute()
-                                //.Cron("0 0 1 * *")
+                                .Cron("0 0 1 * *")
                                 .PreventOverlapping(nameof(FinanceStatisticsService));
             });
 

@@ -25,7 +25,7 @@ namespace ShopRite.Core.Services
 
         public async Task Invoke()
         {
-            var previousMonth = Date.Months[DateTime.Today.Month];
+            var previousMonth = Date.Months[DateTime.Today.AddMonths(-1).Month];
             var orders = await _db.Query<Order>().Where(x => x.Month == previousMonth && x.Year == DateTime.Now.Year)
                 .ToListAsync();
 
