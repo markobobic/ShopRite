@@ -21,5 +21,6 @@ namespace ShopRite.API.Controllers
            var response = await _mediator.Send(new CreateOrder.Command { CreateOrderRequest = request });
            return Ok(response);
         }
+
     }
 }

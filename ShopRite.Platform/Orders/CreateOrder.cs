@@ -39,7 +39,7 @@ namespace ShopRite.Platform.Orders
                 var basket = data.IsNullOrEmpty ? null : JsonSerializer.Deserialize<CustomerBasket>(data);
                 foreach (var orderItem in basket?.Items)
                 {
-                    var product = await _db.LoadAsync<Product>(orderItem.Id);
+                    var product = await _db.LoadAsync<Product>(orderItem.ProductId);
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
                     var isOutOfStock = TotalSumFromBasket(basket) > CurrentStockInDatabase(stocksDict);
                     foreach (var requestedSize in orderItem.Sizes)
@@ -48,14 +48,22 @@ namespace ShopRite.Platform.Orders
                     }
                 }
                 if (response.SuccessfulOrders[false].Any())
-                   
+                {
                     await _emailService.SendEmailOutOfStock(new OrderDTO(response.SuccessfulOrders[false], basket.TotalPrice));
-                else
-                    await _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
+                    await _db.SaveChangesAsync();
+                    return response;
+                }
+                
+                await _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
                                                                  request.CreateOrderRequest.BuyerEmail);
-
-
+                var order = new Domain.Order()
+                {
+                    OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.ProductId, Sizes = x.Sizes }).ToList(),
+                    BuyerEmail = request.CreateOrderRequest.BuyerEmail
+                };
+                await _db.StoreAsync(order);
                 await _db.SaveChangesAsync();
+               
 
                 return response;
             }
@@ -90,7 +98,6 @@ namespace ShopRite.Platform.Orders
             }
             private static int CurrentStockInDatabase(Dictionary<string, int> stocksDict) => stocksDict.Sum(x => x.Value);
             private static int TotalSumFromBasket(CustomerBasket basket) => basket.Items.Sum(x => x.Sizes.Sum(x => x.Quantity));
-
 
         }
         public class CreateOrderRequest

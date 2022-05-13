@@ -4,7 +4,7 @@ namespace ShopRite.Domain
 {
     public record BasketItem
     {
-        public string Id { get; set; }
+        public string ProductId { get; set; }
         public string Name { get; init; }
         public decimal Price { get; set; }
         public string ProductBrand { get; set; }
