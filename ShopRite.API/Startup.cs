@@ -101,7 +101,8 @@ namespace ShopRite.API
                     .WithScopedLifetime();
             });
             services.AddScoped<IEmailService, EmailService>();
-            services.AddTransient<IncomeService>();
+            services.AddTransient<FinanceStatisticsService>();
+            services.AddScheduler();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSwaggerGen(swagger =>
             {
@@ -161,9 +162,10 @@ namespace ShopRite.API
 
             provider.UseScheduler(scheduler =>
             {
-                scheduler.Schedule<IncomeService>()
-                                .Cron("0 0 1 * *")
-                                .PreventOverlapping(nameof(IncomeService));
+                scheduler.Schedule<FinanceStatisticsService>()
+                .EveryMinute()
+                                //.Cron("0 0 1 * *")
+                                .PreventOverlapping(nameof(FinanceStatisticsService));
             });
 
         }

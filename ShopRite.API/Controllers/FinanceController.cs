@@ -8,9 +8,9 @@ namespace ShopRite.API.Controllers
     [ApiController]
     public class FinanceController : ControllerBase
     {
-        public async Task<IActionResult> TotalIncomePerMonth()
-        {
-            return Ok();
-        }
+        //public async Task<IActionResult> TotalIncomePerMonth()
+        //{
+        //    return Ok();
+        //}
     }
 }

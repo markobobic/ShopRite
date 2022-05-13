@@ -13,11 +13,11 @@ using System.Threading.Tasks;
 
 namespace ShopRite.Core.Services
 {
-    public class IncomeService : IInvocable, ICancellableInvocable
+    public class FinanceStatisticsService : IInvocable, ICancellableInvocable
     {
         private readonly IAsyncDocumentSession _db;
 
-        public IncomeService(IAsyncDocumentSession db)
+        public FinanceStatisticsService(IAsyncDocumentSession db)
         {
             _db = db;
         }
@@ -25,14 +25,16 @@ namespace ShopRite.Core.Services
 
         public async Task Invoke()
         {
-            var previousMonth = Date.Months[DateTime.Today.AddMonths(-1).Month];
-            var orders = await _db.Query<Order>().Where(x => x.Month == previousMonth && x.Year == DateTime.Now.Year).ToListAsync();
+            var previousMonth = Date.Months[DateTime.Today.Month];
+            var orders = await _db.Query<Order>().Where(x => x.Month == previousMonth && x.Year == DateTime.Now.Year)
+                .ToListAsync();
 
             var orderStatistic = new OrderStatistics
             {
                 Month = previousMonth,
                 Year = DateTime.Now.Year,
                 TotalIncome = orders?.Sum(x => x.TotalPrice) ?? 0,
+                TotalOrders = orders?.Count ?? 0,
             };
 
            await _db.StoreAsync(orderStatistic);
