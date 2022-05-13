@@ -40,7 +40,7 @@ namespace ShopRite.Platform.Basket
                     customerBasket.Items
                         .Add(new BasketItem() 
                         {
-                            ProductId = product.Id,
+                            Id = product.Id,
                             Name = product.Name,
                             Price = product.Price,
                             ProductBrand = product.ProductBrand,

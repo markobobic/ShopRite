@@ -1,9 +1,11 @@
 ﻿using MediatR;
 using Raven.Client.Documents.Session;
+using ShopRite.Core.Constants;
 using ShopRite.Core.DTOs;
 using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using StackExchange.Redis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -39,7 +41,7 @@ namespace ShopRite.Platform.Orders
                 var basket = data.IsNullOrEmpty ? null : JsonSerializer.Deserialize<CustomerBasket>(data);
                 foreach (var orderItem in basket?.Items)
                 {
-                    var product = await _db.LoadAsync<Product>(orderItem.ProductId);
+                    var product = await _db.LoadAsync<Product>(orderItem.Id);
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
                     var isOutOfStock = TotalSumFromBasket(basket) > CurrentStockInDatabase(stocksDict);
                     foreach (var requestedSize in orderItem.Sizes)
@@ -58,12 +60,14 @@ namespace ShopRite.Platform.Orders
                                                                  request.CreateOrderRequest.BuyerEmail);
                 var order = new Domain.Order()
                 {
-                    OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.ProductId, Sizes = x.Sizes }).ToList(),
-                    BuyerEmail = request.CreateOrderRequest.BuyerEmail
+                    OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.Id, Sizes = x.Sizes}).ToList(),
+                    BuyerEmail = request.CreateOrderRequest.BuyerEmail,
+                    TotalPrice = basket.TotalPrice,
+                    Month = Date.Months[DateTime.Today.Month],
+                    Year = DateTime.Today.Year,
                 };
                 await _db.StoreAsync(order);
                 await _db.SaveChangesAsync();
-               
 
                 return response;
             }
