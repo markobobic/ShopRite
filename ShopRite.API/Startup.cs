@@ -1,4 +1,5 @@
 using Amazon.S3;
+using Coravel;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -100,6 +101,7 @@ namespace ShopRite.API
                     .WithScopedLifetime();
             });
             services.AddScoped<IEmailService, EmailService>();
+            services.AddTransient<IncomeService>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSwaggerGen(swagger =>
             {
@@ -137,6 +139,8 @@ namespace ShopRite.API
         }
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var provider = app.ApplicationServices;
+
             app.UseMiddleware<ExceptionMiddleware>();
 
             app.UseSwagger();
@@ -153,6 +157,13 @@ namespace ShopRite.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+
+            provider.UseScheduler(scheduler =>
+            {
+                scheduler.Schedule<IncomeService>()
+                                .Cron("0 0 1 * *")
+                                .PreventOverlapping(nameof(IncomeService));
             });
 
         }

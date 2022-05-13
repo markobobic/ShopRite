@@ -1,9 +1,11 @@
 ﻿using MediatR;
 using Raven.Client.Documents.Session;
+using ShopRite.Core.Constants;
 using ShopRite.Core.DTOs;
 using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using StackExchange.Redis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -48,13 +50,23 @@ namespace ShopRite.Platform.Orders
                     }
                 }
                 if (response.SuccessfulOrders[false].Any())
-                   
+                {
                     await _emailService.SendEmailOutOfStock(new OrderDTO(response.SuccessfulOrders[false], basket.TotalPrice));
-                else
-                    await _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
+                    await _db.SaveChangesAsync();
+                    return response;
+                }
+                
+                await _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
                                                                  request.CreateOrderRequest.BuyerEmail);
-
-
+                var order = new Domain.Order()
+                {
+                    OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.Id, Sizes = x.Sizes}).ToList(),
+                    BuyerEmail = request.CreateOrderRequest.BuyerEmail,
+                    TotalPrice = basket.TotalPrice,
+                    Month = Date.Months[DateTime.Today.Month],
+                    Year = DateTime.Today.Year,
+                };
+                await _db.StoreAsync(order);
                 await _db.SaveChangesAsync();
 
                 return response;
@@ -90,7 +102,6 @@ namespace ShopRite.Platform.Orders
             }
             private static int CurrentStockInDatabase(Dictionary<string, int> stocksDict) => stocksDict.Sum(x => x.Value);
             private static int TotalSumFromBasket(CustomerBasket basket) => basket.Items.Sum(x => x.Sizes.Sum(x => x.Quantity));
-
 
         }
         public class CreateOrderRequest
