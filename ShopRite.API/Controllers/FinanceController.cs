@@ -22,5 +22,11 @@ namespace ShopRite.API.Controllers
             var response = await _mediator.Send(new GetIncomePerMonth.Query { Month = month, Year = year });
             return Ok(response);
         }
+        [HttpGet("per-year")]
+        public async Task<IActionResult> GetFinancialStatistics([FromQuery] int year)
+        {
+            var response = await _mediator.Send(new GetIncomePerYear.Query { Year = year });
+            return Ok(response);
+        }
     }
 }

@@ -11,21 +11,21 @@ using System.Threading.Tasks;
 
 namespace ShopRite.Platform.Finance
 {
-    public class GetIncomePerMonth
+    public class GetIncomePerYear
     {
-        public class Query : IRequest<IncomeResponsePerMonth>
+        public class Query : IRequest<IncomeResponsePerYear>
         {
             public string Month { get; set; }
             public int Year { get; set; }
         }
 
-        public class IncomeResponsePerMonth
+        public class IncomeResponsePerYear
         {
             public int TotalOrders { get; set; }
             public decimal TotalIncome { get; set; }
         }
 
-        public class QueryHandler : IRequestHandler<Query, IncomeResponsePerMonth>
+        public class QueryHandler : IRequestHandler<Query, IncomeResponsePerYear>
         {
             private readonly IAsyncDocumentSession _db;
 
@@ -34,18 +34,18 @@ namespace ShopRite.Platform.Finance
                 _db = db;
             }
 
-            public async Task<IncomeResponsePerMonth> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<IncomeResponsePerYear> Handle(Query request, CancellationToken cancellationToken)
             {
                 var requestedStatistics = await _db.Query<OrderStatistics>()
-                    .Where(x => string.Equals(x.Month, request.Month, StringComparison.OrdinalIgnoreCase) && x.Year == request.Year)
+                    .Where(x => x.Year == request.Year)
                     .FirstOrDefaultAsync();
-                
-                return new IncomeResponsePerMonth
+
+                return new IncomeResponsePerYear
                 {
                     TotalIncome = requestedStatistics?.TotalIncome ?? 0,
                     TotalOrders = requestedStatistics?.TotalOrders ?? 0,
                 };
-                    
+
             }
         }
     }
