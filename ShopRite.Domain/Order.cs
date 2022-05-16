@@ -9,5 +9,7 @@ namespace ShopRite.Domain
         public decimal TotalPrice { get; set; }
         public string Month { get; set; }
         public int Year { get; set; }
+        public PostComany PostComany { get; set; }
+        public string OrderStatus { get; set; }
     }
 }

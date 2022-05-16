@@ -21,6 +21,7 @@ namespace ShopRite.Core.Constants
     }
     public static class Date
     {
-        public static readonly Dictionary<int, string> Months = Enumerable.Range(1, 12).Select(i => new KeyValuePair<int, string>(i, DateTimeFormatInfo.CurrentInfo.GetMonthName(i))).ToDictionary(x => x.Key, x => x.Value);
+        public static readonly Dictionary<int, string> Months = 
+            Enumerable.Range(1, 12).Select(i => new KeyValuePair<int, string>(i, DateTimeFormatInfo.CurrentInfo.GetMonthName(i))).ToDictionary(x => x.Key, x => x.Value);
     }
 }
