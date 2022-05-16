@@ -1,13 +1,17 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents.Session;
 using ShopRite.Core.Constants;
 using ShopRite.Core.DTOs;
+using ShopRite.Core.Extensions;
 using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,51 +29,79 @@ namespace ShopRite.Platform.Orders
             private readonly IDatabase _redis;
             private readonly IAsyncDocumentSession _db;
             private readonly IEmailService _emailService;
+            private readonly UserManager<AppUser> _userManager;
+            private readonly IHttpContextAccessor _context;
 
             public Handler(IConnectionMultiplexer redis,
                            IAsyncDocumentSession db,
-                           IEmailService emailService)
+                           IEmailService emailService,
+                           UserManager<AppUser> userManager,
+                           IHttpContextAccessor context)
             {
                 _redis = redis.GetDatabase();
                 _db = db;
                 _emailService = emailService;
+                _userManager = userManager;
+                _context = context;
             }
             public async Task<CreateOrderResponse> Handle(Command request, CancellationToken cancellationToken)
             {
-                var data = await _redis.StringGetAsync(request.CreateOrderRequest.BasketId);
+                var currentUser = await GetCurrentUser();
+                var basket = await GetCurrentCustomerBasket(request);
+               
                 var response = new CreateOrderResponse();
-                var basket = data.IsNullOrEmpty ? null : JsonSerializer.Deserialize<CustomerBasket>(data);
-                foreach (var orderItem in basket?.Items)
+                basket?.Items.ForEachParallel(orderItem =>
                 {
-                    var product = await _db.LoadAsync<Product>(orderItem.Id);
+                    var product =  _db.LoadAsync<Product>(orderItem.Id).Result;
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
                     var isOutOfStock = TotalSumFromBasket(basket) > CurrentStockInDatabase(stocksDict);
                     foreach (var requestedSize in orderItem.Sizes)
                     {
                         SubstractFromStock(ref response, product, stocksDict, isOutOfStock, requestedSize);
                     }
-                }
+                });
+                
                 if (response.SuccessfulOrders[false].Any())
                 {
                     await _emailService.SendEmailOutOfStock(new OrderDTO(response.SuccessfulOrders[false], basket.TotalPrice));
                     await _db.SaveChangesAsync();
                     return response;
                 }
-                
+
                 await _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
                                                                  request.CreateOrderRequest.BuyerEmail);
                 var order = new Domain.Order()
                 {
-                    OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.Id, Sizes = x.Sizes}).ToList(),
+                    OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.Id, Sizes = x.Sizes }).ToList(),
                     BuyerEmail = request.CreateOrderRequest.BuyerEmail,
                     TotalPrice = basket.TotalPrice,
                     Month = Date.Months[DateTime.Today.Month],
                     Year = DateTime.Today.Year,
+                    ShipToAddress = currentUser?.Address ?? new Address(),
                 };
                 await _db.StoreAsync(order);
                 await _db.SaveChangesAsync();
 
                 return response;
+            }
+
+            private async Task<CustomerBasket> GetCurrentCustomerBasket(Command request)
+            {
+                var data = await _redis.StringGetAsync(request.CreateOrderRequest.BasketId);
+                var basket = data.IsNullOrEmpty ? null : JsonSerializer.Deserialize<CustomerBasket>(data);
+                return basket;
+            }
+
+            private async Task<AppUser> GetCurrentUser()
+            {
+                AppUser currentUser = null;
+                var email = _context.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+                if (string.IsNullOrEmpty(email) is false)
+                {
+                    currentUser = await _userManager.FindByEmailAsync(email);
+                }
+
+                return currentUser;
             }
 
             private void SubstractFromStock(ref CreateOrderResponse response, Product product, Dictionary<string, int> stocksDict, bool isOutOfStock, Stock requestedSize)
