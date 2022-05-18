@@ -9,6 +9,7 @@ using ShopRite.Core.Interfaces;
 using ShopRite.Domain;
 using StackExchange.Redis;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -50,26 +51,22 @@ namespace ShopRite.Platform.Orders
                 var basket = await GetCurrentCustomerBasket(request);
                
                 var response = new CreateOrderResponse();
-                basket?.Items.ForEachParallel(orderItem =>
+                await Parallel.ForEachAsync(basket.Items, async (orderItem, cancellationToken) =>
                 {
-                    var product =  _db.LoadAsync<Product>(orderItem.Id).Result;
+                    var product = await _db.LoadAsync<Product>(orderItem.Id);
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
                     var isOutOfStock = TotalSumFromBasket(basket) > CurrentStockInDatabase(stocksDict);
-                    foreach (var requestedSize in orderItem.Sizes)
-                    {
-                        SubstractFromStock(ref response, product, stocksDict, isOutOfStock, requestedSize);
-                    }
+                    orderItem.Sizes.ForEachParallel(requestedSize => SubstractFromStock(ref response, product, stocksDict, isOutOfStock, requestedSize));
                 });
                 
                 if (response.SuccessfulOrders[false].Any())
                 {
-                    await _emailService.SendEmailOutOfStock(new OrderDTO(response.SuccessfulOrders[false], basket.TotalPrice));
-                    await _db.SaveChangesAsync();
+                    var outOfStockTask = _emailService.SendEmailOutOfStock(new OrderDTO(response.SuccessfulOrders[false], basket.TotalPrice));
+                    await Task.WhenAll(outOfStockTask, _db.SaveChangesAsync());
                     return response;
                 }
 
-                await _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
-                                                                 request.CreateOrderRequest.BuyerEmail);
+                
                 var order = new Domain.Order()
                 {
                     OrderItems = basket.Items.Select(x => new OrderItem { ProductId = x.Id, Sizes = x.Sizes }).ToList(),
@@ -79,8 +76,11 @@ namespace ShopRite.Platform.Orders
                     Year = DateTime.Today.Year,
                     ShipToAddress = currentUser?.Address ?? new Address(),
                 };
-                await _db.StoreAsync(order);
-                await _db.SaveChangesAsync();
+                 var emailSuccessfulOrder = _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
+                                                                 request.CreateOrderRequest.BuyerEmail);
+                 
+                 await Task.WhenAll(emailSuccessfulOrder, _db.StoreAsync(order), _db.SaveChangesAsync());
+                  
 
                 return response;
             }
@@ -144,12 +144,12 @@ namespace ShopRite.Platform.Orders
 
         public class CreateOrderResponse
         {
-            public List<string> ProductsOutOfStack { get; set; } = new();
-            public Dictionary<bool, List<ProductDetailDTO>> SuccessfulOrders { get; set; }
-                      = new()
+            public ConcurrentBag<string> ProductsOutOfStack { get; set; } = new();
+            public IDictionary<bool, ConcurrentBag<ProductDetailDTO>> SuccessfulOrders { get; set; }
+                      = new ConcurrentDictionary<bool, ConcurrentBag<ProductDetailDTO>>
                       {
-                          { true, new List<ProductDetailDTO>() },
-                          { false, new List<ProductDetailDTO>() },
+                          [true] = new ConcurrentBag<ProductDetailDTO>(),
+                          [false] = new ConcurrentBag<ProductDetailDTO>(),
                       };
             public decimal TotalPrice { get; set; }
         }

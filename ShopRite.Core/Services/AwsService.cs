@@ -34,10 +34,13 @@ namespace ShopRite.Core.Services
 
             return url;
         }
-        public string CreateUrlOfFile(IFormFile file) =>
-                $@"https://{_globalConfig.AWS.BucketName}.s3.amazonaws.com/{file.FileName}";
+        public string CreateUrlOfFile(IFormFile file) => 
+            file is null ? string.Empty : $@"https://{_globalConfig.AWS.BucketName}.s3.amazonaws.com/{file.FileName}";
+
         public async Task UploadImageToS3Bucket(IFormFile file)
         {
+            if (file is null) return;
+
             var awsRequest = new PutObjectRequest()
             {
                 BucketName = _globalConfig.AWS.BucketName,
