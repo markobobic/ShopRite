@@ -1,6 +1,6 @@
 ﻿namespace ShopRite.Domain
 {
-    public record PostComany : BaseEntity
+    public record PostCompany : BaseEntity
     {
         public string Name { get; set; }
         public DeliveryMethod DeliveryMethod { get; set; }
