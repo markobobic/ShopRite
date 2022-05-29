@@ -25,6 +25,7 @@
     <PackageReference Include="RavenDB.Client" Version="5.3.101" />
     <PackageReference Include="RavenDB.Identity" Version="8.0.7" />
     <PackageReference Include="Scrutor" Version="4.1.0" />
+    <PackageReference Include="Stripe.net" Version="39.115.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.6.3" />
     <PackageReference Include="Swashbuckle.AspNetCore.JsonMultipartFormDataSupport" Version="1.7.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.17.0" />

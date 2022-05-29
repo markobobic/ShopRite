@@ -32,18 +32,21 @@ namespace ShopRite.Platform.Orders
             private readonly IEmailService _emailService;
             private readonly UserManager<AppUser> _userManager;
             private readonly IHttpContextAccessor _context;
+            private readonly IPaymentService _paymentService;
 
             public Handler(IConnectionMultiplexer redis,
                            IAsyncDocumentSession db,
                            IEmailService emailService,
                            UserManager<AppUser> userManager,
-                           IHttpContextAccessor context)
+                           IHttpContextAccessor context,
+                           IPaymentService paymentService)
             {
                 _redis = redis.GetDatabase();
                 _db = db;
                 _emailService = emailService;
                 _userManager = userManager;
                 _context = context;
+                _paymentService = paymentService;
             }
             public async Task<CreateOrderResponse> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -54,6 +57,7 @@ namespace ShopRite.Platform.Orders
                 await Parallel.ForEachAsync(basket.Items, async (orderItem, cancellationToken) =>
                 {
                     var product = await _db.LoadAsync<Product>(orderItem.Id);
+                    if (orderItem.Price != product.Price) orderItem.Price = product.Price;
                     var stocksDict = product.Stocks.ToDictionary(key => key.Size, value => value.Quantity);
                     var isOutOfStock = TotalSumFromBasket(basket) > CurrentStockInDatabase(stocksDict);
                     orderItem.Sizes.ForEachParallel(requestedSize => SubstractFromStock(ref response, product, stocksDict, isOutOfStock, requestedSize));
@@ -76,10 +80,17 @@ namespace ShopRite.Platform.Orders
                     Year = DateTime.Today.Year,
                     ShipToAddress = currentUser?.Address ?? new Address(),
                 };
+
+                Task stripeTask = Task.CompletedTask;
+                if (request.CreateOrderRequest.IsOnlinePaymentMethod)
+                {
+                    stripeTask = _paymentService.CreateOrUpdatePaymentIntent(basket, string.Empty);
+                }
+
                  var emailSuccessfulOrder = _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),
                                                                  request.CreateOrderRequest.BuyerEmail);
                  
-                 await Task.WhenAll(emailSuccessfulOrder, _db.StoreAsync(order), _db.SaveChangesAsync());
+                 await Task.WhenAll(emailSuccessfulOrder, _db.StoreAsync(order), _db.SaveChangesAsync(), stripeTask);
                   
 
                 return response;
@@ -140,6 +151,7 @@ namespace ShopRite.Platform.Orders
         {
             public string BuyerEmail { get; set; }
             public string BasketId { get; set; }
+            public bool IsOnlinePaymentMethod { get; set; }
         }
 
         public class CreateOrderResponse
