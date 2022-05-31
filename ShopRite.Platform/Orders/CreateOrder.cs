@@ -33,13 +33,15 @@ namespace ShopRite.Platform.Orders
             private readonly UserManager<AppUser> _userManager;
             private readonly IHttpContextAccessor _context;
             private readonly IPaymentService _paymentService;
+            private readonly IGoogleService _googleService;
 
             public Handler(IConnectionMultiplexer redis,
                            IAsyncDocumentSession db,
                            IEmailService emailService,
                            UserManager<AppUser> userManager,
                            IHttpContextAccessor context,
-                           IPaymentService paymentService)
+                           IPaymentService paymentService,
+                           IGoogleService googleService)
             {
                 _redis = redis.GetDatabase();
                 _db = db;
@@ -47,6 +49,7 @@ namespace ShopRite.Platform.Orders
                 _userManager = userManager;
                 _context = context;
                 _paymentService = paymentService;
+                _googleService = googleService;
             }
             public async Task<CreateOrderResponse> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -84,7 +87,9 @@ namespace ShopRite.Platform.Orders
                 Task stripeTask = Task.CompletedTask;
                 if (request.CreateOrderRequest.IsOnlinePaymentMethod)
                 {
-                    stripeTask = _paymentService.CreateOrUpdatePaymentIntent(basket, string.Empty);
+                    var user = await GetCurrentUser();
+                    var distanceType =_googleService.DetermineDistanceType(user.Address, order.ShipToAddress);
+                    stripeTask = _paymentService.CreateOrUpdatePaymentIntent(basket, string.Empty, distanceType);
                 }
 
                  var emailSuccessfulOrder = _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),

@@ -26,12 +26,12 @@ namespace ShopRite.Core.Services
             _stripeConfig = configuration.Get<StripeConfig>();
             _db = db;
         }
-        public async Task CreateOrUpdatePaymentIntent(CustomerBasket basket, string postCompanyId)
+        public async Task CreateOrUpdatePaymentIntent(CustomerBasket basket, string postCompanyId, Domain.DistanceType distance)
         {
            
             StripeConfiguration.ApiKey = _stripeConfig.StripeSettings.SecretKey;
             var postCompany = await _db.LoadAsync<PostCompany>(postCompanyId);
-            var shippingPrice = postCompany is null ? 0m : postCompany.DeliveryMethod.DeliveryCost;
+            var shippingPrice = postCompany is null ? 0m : postCompany.DeliveryMethods[distance].DeliveryCost;
            
             var paymentIntentService = new PaymentIntentService();
             PaymentIntent paymentIntent;

@@ -102,6 +102,7 @@ namespace ShopRite.API
             });
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPaymentService, PaymentService>();
+            services.AddScoped<IGoogleService, GoogleService>();
             services.AddTransient<FinanceStatisticsService>();
             services.AddScheduler();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
