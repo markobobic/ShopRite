@@ -84,7 +84,7 @@ namespace ShopRite.Platform.Orders
                 Task stripeTask = Task.CompletedTask;
                 if (request.CreateOrderRequest.IsOnlinePaymentMethod)
                 {
-                    stripeTask = _paymentService.CreateOrUpdatePaymentIntent(basket, string.Empty);
+                    stripeTask = _paymentService.CreateOrUpdatePaymentIntent(basket, string.Empty, DistanceType.MediumDistance);
                 }
 
                  var emailSuccessfulOrder = _emailService.SendEmailSuccessfulOrder(new OrderDTO(response.SuccessfulOrders[true], basket.TotalPrice),

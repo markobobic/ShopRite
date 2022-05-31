@@ -4,8 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ShopRite.Core.Configurations;
 using ShopRite.Core.Interfaces;
-using ShopRite.Core.Responses;
-using ShopRite.Domain;
 using Stripe;
 using System.IO;
 using System.Threading.Tasks;
@@ -50,7 +48,6 @@ namespace ShopRite.API.Controllers
                     order = await _paymentService.UpdateOrderPaymentFailed(intent.Id);
                     _logger.LogInformation("Payment Failed: ", order.Id);
                     break;
-
             }
 
             return new EmptyResult();
